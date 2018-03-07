@@ -1,0 +1,130 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:08:41 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.simulation;
+
+import cps.jarch.data.event.tools.SimpleSource;
+import cps.jarch.data.event.tools.SimpleSourceImp;
+import cps.jarch.data.value.tools.BoundedValue;
+import cps.jarch.data.value.tools.RWFlag;
+
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+//threading:
+//RWValue/BoundedValues modifiable on any thread
+//step/clear/load/save/insertIon/removeIon return immediatly but execute on SimModel worker thread
+//all getXXX methods (except getChangeSource) are accessible only from SimModel worker thread
+//listeners to change source are notified on simModel worker thread
+/**
+ * <p>TODO document SimModel
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class SimModel {
+	private final Engine raw=new Engine();
+	private final ReentrantReadWriteLock lock=new ReentrantReadWriteLock();
+	// ------------------------------------------------------------------------
+
+	private final Scene scene=new Scene(raw);
+
+	private final InputParameters inputParameters=new InputParameters(lock);
+
+	private final OutputParameters outputParameters=new OutputParameters(lock);
+
+	public final InputParameters getInputParameters() {
+		return inputParameters;
+	}
+
+	public final OutputParameters getOutputParameters() {
+		return outputParameters;
+	}
+
+	public final Scene getScene() {
+		return scene;
+	}
+	
+	private final RWFlag running=new RWFlag(false);//not locked since it's never read
+	
+	public final RWFlag running() {
+		return running;
+	}
+	
+	// ------------------------------------------------------------------------
+	//time
+	private final BoundedValue<Integer> stepSize=new BoundedValue<Integer>(5,1,100,lock);
+	public final BoundedValue<Integer> stepSize(){
+		return stepSize;
+	}
+	private int frameNumber;
+	public final int getFrameNumber() {
+		return frameNumber;
+	}
+	// ------------------------------------------------------------------------
+
+	public SimModel(SimConfig initialConfig) {
+		this.initialConfig = initialConfig;
+		//ok on any thread since we're not live yet
+		clear();
+	}
+
+	private SimConfig initialConfig;
+
+	private void abort() {
+		abortStep=true;
+	}
+	private boolean inStep=false;
+	private boolean abortStep=false;
+	
+	void step() throws ShakeFailException {
+		abortStep=false;
+		final int steps;
+		lock.readLock().lock();
+		try {
+			steps = stepSize.get();
+			outputParameters.preStep();
+			inputParameters.apply(raw);
+		} finally {
+			lock.readLock().unlock();
+		}
+		for (int i = 0; i < steps&&!abortStep; i++) {
+			raw.step();
+			frameNumber++;
+			outputParameters.step(raw);
+		}
+		outputParameters.postStep();
+		source.sendEvent();
+	}
+	
+	void clear() {
+		raw.clear();
+		scene.removeIons();
+		initialConfig.toData(raw);
+		raw.initial();
+		raw.tempav = raw.atemp;
+		raw.presav = raw.apres;
+		raw.rho = raw.arho;
+		raw.hbonds = 0;
+		// ObjLib.boundsSize = getBoundsSize();
+		//if (initialConfig != null) initialConfig.toData(raw);
+		lock.writeLock().lock();
+		try {
+			frameNumber=0;
+			//clearParameters
+			stepSize.getData().loadInitial();
+			inputParameters.clear(raw);
+			outputParameters.clear();
+			running.getData().loadInitial();
+		}finally {
+			lock.writeLock().unlock();
+		}
+		source.sendEvent();
+	}
+	
+	// ------------------------------------------------------------------------
+	private final SimpleSourceImp source=new SimpleSourceImp(this);
+	public final SimpleSource getChangeSource() {
+		return source;
+	}
+}

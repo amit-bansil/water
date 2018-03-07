@@ -1,0 +1,222 @@
+/*
+ * CREATED ON:    Jun 29, 2005 9:18:24 AM
+ * CREATED BY:     Amit Bansil 
+ */
+package cps.jarch.data.collections;
+
+import ca.odell.glazedlists.EventList;
+import ca.odell.glazedlists.event.ListEvent;
+import ca.odell.glazedlists.event.ListEventListener;
+
+import cps.jarch.data.event.Unlinker;
+import cps.jarch.data.value.tools.Converter;
+import cps.jarch.util.notes.Hook;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * Transforms an {@link ca.odell.glazedlists.EventList} of elements of type
+ * InType to a list of elements of OutType. All add/remove operations must be
+ * performed on the input list, although it is possible to manually update an
+ * element of the input list with an output value. Changes in the input list are
+ * automatically propagated to the output list using the provided hooks.<br>
+ * 
+ * @version $Id$
+ */
+public abstract class ListView<InType, OutType> implements Unlinker {
+	// ------------------------------------------------------------------------
+	// constructor
+	
+	/**
+	 * creates ListView from event driven list <code>in</code>. Elements are
+	 * converted using <code>converter</code>, which must be able to convert
+	 * and unConvert any element passed to it.
+	 */
+	public ListView(EventList<InType> in, Converter<InType, OutType> converter) {
+		if (!converter.isConvertSafe() && !converter.isUnconvertSafe())
+			throw new IllegalArgumentException(
+				"converter must be safe both ways");
+
+		this.in = in;
+		this.converter = converter;
+
+		// create array lists backing out
+		out = new ArrayList<OutType>(in.size());
+		outRO = Collections.unmodifiableList(out);
+		unconvertedOutCache = new ArrayList<InType>(in.size());
+
+		// add initial elements from src->dst
+		for (int i = 0; i < in.size(); i++) {
+			_add(i);
+		}
+
+		// bind listener to in
+		in.addListEventListener(inListener);
+	}
+	/**
+	 * disconnect this from in and remove all elements from out.
+	 * @see cps.jarch.data.event.Unlinker#unlink()
+	 */
+	public void unlink() {
+		in.removeListEventListener(inListener);
+		for (int i = 0; i < in.size(); i++) {
+			_remove(i);
+		}
+	}
+	// ------------------------------------------------------------------------
+	// fields
+	
+	private final Converter<InType, OutType> converter;
+	private final EventList<InType> in;
+
+	private final List<OutType> out;
+	//cache of inType elements corresponding to outType elements
+	//by keeping this insync with the desired values in input
+	//we can detect when input has been changed externally or internally
+	//and avoid recursion caused by filter inconsistencies and internal updates.
+	private final List<InType> unconvertedOutCache;
+
+	// read only access to out
+	private final List<OutType> outRO;
+
+
+	/**
+	 * provides read only access to out.
+	 */
+	public final List<OutType> getOut() {
+		return outRO;
+	}
+	
+	// ------------------------------------------------------------------------
+	// src->dst biding
+	// delegates notification of changes to src to hooks below
+	private final ListEventListener<InType> inListener = new ListEventListener<InType>() {
+		public void listChanged(ListEvent<InType> listChanges) {
+			while (listChanges.next()) {
+				int n = listChanges.getIndex();
+				switch (listChanges.getType()) {
+					case ListEvent.DELETE:
+						_remove(n);
+						break;
+					case ListEvent.INSERT:
+						_add(n);
+						break;
+					case ListEvent.UPDATE:
+						_update(n);
+						break;
+					default:
+						throw new UnknownError();
+				}
+			}
+		}
+	};
+
+	// notification that an element at index has been added to 'in'
+	private void _add(int index) {
+		InType inToAdd;
+		inToAdd = in.get(index);
+		unconvertedOutCache.add(index, inToAdd);
+		out.add(index, _create(inToAdd, index));
+
+	}
+
+	// notification that an element at index has been removed from 'in'
+	private void _remove(int index) {
+		unconvertedOutCache.remove(index);
+		OutType old = out.remove(index);
+		_dispose(old, index);
+	}
+
+	// notification that an element at index has been updated in 'in'
+	private void _update(int index) {
+		InType newIn;
+		newIn = in.get(index);
+		// avoid recursive calls
+		if (unconvertedOutCache.get(index).equals(newIn)) return;
+		_update(newIn, index);
+	}
+
+	// ------------------------------------------------------------------------
+	// element updating
+
+	// sets element at index in dst to be in. assumes src.get(index).equals(in)
+	private void _update(InType newIn, int index) {
+		unconvertedOutCache.set(index, newIn);
+		try {
+			OutType newOut = converter.convert(newIn);
+			OutType oldOut = out.set(index, newOut);
+			_updated(index, newOut, oldOut);
+		} catch (Converter.ConversionException e) {
+			// should not happen
+			throw new Error(e);
+		}
+	}
+
+	/**
+	 * sets element at index to be newOut in 'out', and the unconversion of
+	 * newOut in 'in'. 'updated' hook will NOT be called but anyone else
+	 * listening to changes in 'in' will be notified.
+	 */
+	public void update(int index, OutType newOut) {
+		try {
+			InType newIn = converter.unconvert(newOut);
+			out.set(index, newOut);
+			// set unconverted first so that dst will not be updated twice
+			unconvertedOutCache.set(index, newIn);
+			in.set(index, newIn);
+		} catch (Converter.ConversionException e1) {
+			// should not happen
+			throw new Error(e1);
+		}
+	}
+
+	/**
+	 * updates all elements of <code>in</code> with elements from out. Call on
+	 * conversion change.
+	 */
+	public void pushInToOut() {
+		for (int i = 0; i < in.size(); i++) {
+			// OPTIMIZE do this as one event
+			_update(i);
+		}
+	}
+
+	/**
+	 * updates all elements of out with elements from in. Call on conversion
+	 * change.
+	 */
+	public void pushOutToIn() {
+		for (int i = 0; i < out.size(); i++) {
+			// OPTIMIZE do this as one event
+			update(i, out.get(i));
+		}
+	}
+
+	// ------------------------------------------------------------------------
+	// implementation hooks
+
+	/**
+	 * hook to create a new outType element from in for addition at index.
+	 * called when a new element is added to <code>in</code> or the view is
+	 * being created. Any element(s) after index will be shifted to the right
+	 * to make space for the value returned by _create.
+	 */
+	@Hook protected abstract OutType _create(InType newIn, int index);
+
+	/**
+	 * hook to get rid of an old <code>OutType</code> element. Called when the
+	 * corresponding <code>InType</code> element been removed from 'in' at
+	 * index or the view is being unbound. oldOut has been removed from the
+	 * 'list' when this method is called and any elements after it shifted to
+	 * the left to fill the space.
+	 */
+	@Hook protected abstract  void _dispose(OutType oldOut, int index);
+
+	/**
+	 * hook called after the element oldOut at index has been replaced with
+	 * newOut in the outputList. Note that oldOut is NOT disposed automatically.
+	 */
+	@Hook protected abstract void _updated(int index, OutType newOut, OutType oldOut);
+}

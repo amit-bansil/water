@@ -1,0 +1,9 @@
+1146495479656	Rename method 'cps.jarch.simulation.script.Script.signal(...)' to 'action'
+1146759084355	Rename resource '/jarch-simulation/src/cps/jarch/simulation/snapshot/Snapshot.properties' to 'SnapshotChooser.properties'
+1146518464984	Rename type 'cps.jarch.simulation.snapshot.Snap' to 'Snapshot'
+1146518419171	Move type 'cps.jarch.simulation.snapshot.SnapshotsModel.Snap' in 'cps.jarch.simulation.snapshot.SnapshotsModel' to new file
+1146511443953	Rename method 'cps.jarch.simulation.snapshot.SnapshotsModel.getSnapshots()' to 'snapshots'
+1146511435515	Rename method 'cps.jarch.simulation.snapshot.SnapshotsModel.getUnFocusedSelection()' to 'unFocusedSelection'
+1146511426843	Rename method 'cps.jarch.simulation.snapshot.SnapshotsModel.getFocusedSelection()' to 'focusedSelection'
+1146511417578	Rename method 'cps.jarch.simulation.snapshot.SnapshotsModel.getSecondarySelection()' to 'secondarySelection'
+1146511411125	Rename method 'cps.jarch.simulation.snapshot.SnapshotsModel.getPrimarySelection()' to 'primarySelection'

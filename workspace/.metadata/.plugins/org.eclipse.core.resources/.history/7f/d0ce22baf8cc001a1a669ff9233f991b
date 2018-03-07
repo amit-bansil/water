@@ -1,0 +1,28 @@
+// Decompiled by DJ v3.2.2.67 Copyright 2002 Atanas Neshkov  Date: 8/28/02 3:39:07 PM
+// Home Page : http://members.fortunecity.com/neshkov/dj.html  - Check often for new version!
+// Decompiler options: packimports(3) 
+// Source File Name:   IInternalData.java
+
+package cps.water.simulation.internal;
+
+import cps.jarch.util.collections.ArrayFinal;
+import cps.jarch.util.notes.Nullable;
+import cps.water.IonData;
+import cps.water.simulation.Ion;
+
+import javax.vecmath.Point3f;
+import javax.vecmath.Tuple3f;
+
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+
+// Referenced classes of package Intermol3D:
+//            IData, FullIconfig, IConfig, InternalData, 
+//            IonData, ObjLib, ShakeFailException, Const
+
+final class EngineWrapperImp extends EngineWrapper {
+
+	
+
+}

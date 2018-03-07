@@ -1,0 +1,203 @@
+// Decompiled by DJ v3.2.2.67 Copyright 2002 Atanas Neshkov  Date: 8/28/02 3:39:07 PM
+// Home Page : http://members.fortunecity.com/neshkov/dj.html  - Check often for new version!
+// Decompiler options: packimports(3) 
+// Source File Name:   IInternalData.java
+
+package cps.water.simulation.internal;
+
+import cps.jarch.util.collections.ArrayFinal;
+import cps.jarch.util.notes.Nullable;
+import cps.water.IonData;
+import cps.water.simulation.Ion;
+
+import javax.vecmath.Point3f;
+import javax.vecmath.Tuple3f;
+
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+
+// Referenced classes of package Intermol3D:
+//            IData, FullIconfig, IConfig, InternalData, 
+//            IonData, ObjLib, ShakeFailException, Const
+
+final class EngineWrapperImp extends EngineWrapper {
+
+	public void fullSave(OutputStream os) throws IOException {
+		FullConfig.save(raw, os);
+	}
+
+	public void fullSave(DataOutputStream os) throws IOException {
+		FullConfig.save(raw, os);
+	}
+
+	public void save(OutputStream os) throws IOException {
+		Config.save(raw, os);
+	}
+
+	public void save(DataOutputStream os) throws IOException {
+		Config.save(raw, os);
+	}
+
+
+	private int oldLatRes=-1;
+	private double oldCut=-1,oldFNum=-1;
+	private PELandscapeCalculator landCalc=null;
+	
+	@Override public int[] generatePeMatrix(ArrayFinal<Ion> ions, int latRes, double cut, float x) {
+		if(landCalc==null||oldLatRes!=latRes||oldCut!=cut)landCalc=new PELandscapeCalculator(latRes,cut);
+		if(oldFNum!=getFNum()) { landCalc.readEngineState(raw); oldFNum=getFNum(); }
+		landCalc.generatePELandscape(ions, x);
+		return landCalc.getLandscape();
+	}
+	
+	@Override public @Nullable ArrayFinal<Ion> getIons() {
+		return raw.ions;
+	}
+
+	@Override public void removeIons() {
+		raw.remove_ion();
+	}
+	@Override public void insertIons(@Nullable ArrayFinal<Ion> ions) {
+		raw.insert_ion(ions);
+	}
+	@Override public void insertIons(@Nullable ArrayFinal<Ion> ions,Point3f ionPos) {
+		raw.insert_ion(ions,((Tuple3f) (ionPos)).x, ((Tuple3f) (ionPos)).y,
+			((Tuple3f) (ionPos)).z);
+	}
+	
+	
+	@Override public int getNumBonds() {
+		return raw.hbonds;
+	}
+
+	@Override public Point3f getBoundsSize() {
+		return new Point3f((float) raw.bx, (float) raw.by, (float) raw.bz);
+	}
+
+	@Override public void setMode(Mode m) {
+		super.mode = m;
+		switch (super.mode) {
+			case KPresKTemp: // '\0'
+				raw.kpres = true;
+				raw.ktemp = true;
+				break;
+
+			case KDensKTemp: // '\001'
+				raw.kpres = false;
+				raw.ktemp = true;
+				break;
+
+			case KPresKEn: // '\002'
+				raw.kpres = true;
+				raw.ktemp = false;
+				break;
+
+			case KDensKEn: // '\003'
+				raw.kpres = false;
+				raw.ktemp = false;
+				break;
+		}
+	}
+
+	@Override public boolean getJumped(int mol, int fld) {
+		return raw.jumped[mol][fld];
+	}
+
+	@Override public double getPressure() {
+		return raw.apres;
+	}
+
+	@Override public void setPressure(double value) {
+		raw.setpressure(value);
+	}
+
+	@Override public double getTemp() {
+		return raw.atemp;
+	}
+
+	@Override public void setTemp(double value) {
+		raw.setemperature(value);
+	}
+
+	@Override public double getEnergy() {
+		return 0.0D;
+	}
+
+	@Override public double getDensity() {
+		return raw.arho;
+	}
+
+	@Override public void setDensity(double value) {
+		raw.setdensity(value);
+	}
+
+	@Override public double getTemperature2() {
+		return raw.temp;
+	}
+
+	@Override public double getDensity2() {
+		return raw.rho;
+	}
+
+	@Override public double getPressure2() {
+		return raw.pres;
+	}
+
+	@Override public double getPE2() {
+		return raw.epot;
+	}
+
+	@Override public double getKE2() {
+		return raw.ekin;
+	}
+
+	@Override public double getTotalEnergy2() {
+		return raw.eges;
+	}
+
+	private Config initialConfig;
+
+	public EngineWrapperImp(Config initialConfig) {
+		this.initialConfig = initialConfig;
+
+		super.ve = raw.ve;
+		super.xni = raw.xni;
+		super.yni = raw.yni;
+		super.zni = raw.zni;
+		super.rn = raw.rn;
+		super.potH2O = raw.potH2O;
+		super.indxww = raw.indxww;
+		clear();
+	}
+
+	@Override public void step() throws ShakeFailException {
+		for (int i = 0; i < super.frameSteps; i++) {
+			raw.step();
+			setFNum(getFNum() + 1);
+		}
+
+		// ObjLib.boundsSize = getBoundsSize();
+	}
+
+	@Override public void clear() {
+		setFNum(0);
+		raw.clear();
+		removeIons();
+		if (initialConfig != null) initialConfig.toData(raw);
+		else raw.loadNMolDef(EngineWrapper.numMols);
+		EngineWrapper.numMols = raw.mols;
+		raw.initial();
+		raw.tempav = raw.atemp;
+		raw.presav = raw.apres;
+		raw.rho = raw.arho;
+		raw.hbonds = 0;
+		// ObjLib.boundsSize = getBoundsSize();
+		if (initialConfig != null) initialConfig.toData(raw);
+	}
+
+	private final Engine raw = new Engine();
+
+
+
+}

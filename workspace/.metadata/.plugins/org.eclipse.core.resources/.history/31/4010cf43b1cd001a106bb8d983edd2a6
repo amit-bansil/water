@@ -1,0 +1,104 @@
+package cps.water.moleculedisplay;
+
+import cps.jarch.util.notes.Constant;
+
+import java.util.concurrent.locks.ReadWriteLock;
+
+public class Scene{
+	private final ReadWriteLock lock;
+	public final @Constant ReadWriteLock getLock() {
+		return lock;
+	}
+	// ------------------------------------------------------------------------
+	//data
+	public static class  DataType{
+		private final float radius;
+		public final float getRadius() {
+			return radius;
+		}
+		private final int faces;
+		public final int getFaces() {
+			return faces;
+		}
+		private final float r,g,b;
+		public final float getRed() {
+			return r;
+		}
+		public final float getGreen() {
+			return g;
+		}
+		public final float getBlue() {
+			return b;
+		}
+		private final boolean useTypeColor;
+		public final boolean useTypeColor() {
+			return useTypeColor;
+		}
+	}
+	
+	public static final class Data<Data>{
+		private final int count;
+		public int getCount() {
+			return count;
+		}
+
+	}
+	// ------------------------------------------------------------------------
+	//atoms
+	
+	private Atoms atmos;
+	public static final class Atoms extends Data{
+		
+		private float[] positions;
+		
+		public void getPositions(int startIndex,int endIndex,float[] target) {
+			
+		}
+		public void getPosition(int index,float[] target) {
+			
+		}
+		public void setPositions(int startIndex,int endIndex,int count,int srcStartIndex,float[] src) {
+			
+		}
+		private int[] typeIndexes;
+		public int getType(int index) {
+			
+		}
+		public void getTypes(int startIndex,int endIndex,)
+		private float[] colors;
+		public void getColors(int startIndex,int endIndex,float[] target) {
+			
+		}
+		public void getColor(int index,float[] target) {
+			
+		}
+		public void setColors(int startIndex,int endIndex,int count,int srcStartIndex,float[] src) {
+			
+		}
+		private Type[] types;
+		
+		
+		
+		private int[] indexesByType;//cache for getIndexesByType
+		/**
+		 * copies indexes of all atoms sorted by type starting with type 0 atoms to target.
+		 */
+		public final void getIndexesByType(int[] target) {
+			
+		}
+	}
+	
+	// ------------------------------------------------------------------------
+	// bonds
+	public static final class Bonds{
+		private Type[] types;
+	}
+	// ------------------------------------------------------------------------
+	/// view
+	
+	// --------------private final int count;
+	public int getCount() {
+		return count;
+	}----------------------------------------------------------
+	// box
+}

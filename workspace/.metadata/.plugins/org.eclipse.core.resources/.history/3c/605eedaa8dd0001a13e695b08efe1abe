@@ -1,0 +1,20 @@
+/*
+ * CREATED ON:    Apr 15, 2006 5:45:32 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.jarch.simulation.snapshot;
+
+import cps.water.ModelManager;
+
+/**
+ * <p>TODO document SnapshotChooser
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class SnapshotChooser {
+
+	public SnapshotChooser(SnapshotsModel model) {
+	}
+
+}

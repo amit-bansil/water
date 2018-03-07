@@ -1,0 +1,264 @@
+package cps.water.simulation.internal;
+
+
+import cps.jarch.util.collections.ArrayFinal;
+import cps.jarch.util.notes.Nullable;
+import cps.water.util.Tuple3f;
+
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+
+public final class EngineWrapper{
+    static int numMols;
+
+    //frame control
+    private int fnum;
+    private int frameSteps=1;
+    public final int getFNum(){ return fnum; }
+    public final void setFNum(int n){ fnum = n; }
+    public final void setStep(int n){ frameSteps=n; }
+    public final int getStep(){ return frameSteps; }
+    //postion
+    static final int numAtoms  = 3;
+    static final int O_ATOM=2;
+    static final int H1_ATOM=0;
+    static final int H2_ATOM=1;
+    static final int PX_FEILD=0;
+    static final int PY_FEILD=1;
+    static final int PZ_FEILD=2;
+    private float[][][] rn;
+    public final float[][][] getRaw(){ return rn; }
+
+    public final float getPX(int mol, int atom){
+        return rn[mol][PX_FEILD][atom];
+    }
+    public final float getPY(int mol, int atom){
+        return (rn[mol][PY_FEILD][atom]);
+    }
+    public final float getPZ(int mol, int atom){
+        return (rn[mol][PZ_FEILD][atom]);
+    }
+
+    //ion
+    private double[] xni,yni,zni;
+    public final float getIonX(int mol){
+        return ((float)xni[mol]);
+    }
+    public final float getIonY(int mol){
+        return ((float)yni[mol]);
+    }
+    public final float getIonZ(int mol){
+        return ((float)zni[mol]);
+    }
+    
+
+    //velocity
+    private double[][][] ve;
+    public final double[][][] getVE(){return ve;}
+    static final int VX_FEILD=0;
+    static final int VY_FEILD=1;
+    static final int VZ_FEILD=2;
+    
+    public final float getVX(int mol, int atom){ return (float)ve[mol][VX_FEILD][atom]; }
+    public final float getVY(int mol, int atom){ return (float)ve[mol][VY_FEILD][atom]; }
+    public final float getVZ(int mol, int atom){ return (float)ve[mol][VZ_FEILD][atom]; }
+    public final float getAtomKE(int mol,int trueAtomNum){ 
+        int atom=0;
+        switch(trueAtomNum){
+            case 0: atom=2; break;
+            case 2: atom=1; break;
+        }
+        return (float)Math.sqrt(ve[mol][VX_FEILD][atom]*ve[mol][VX_FEILD][atom]+
+                                ve[mol][VY_FEILD][atom]*ve[mol][VY_FEILD][atom]+
+                                ve[mol][VZ_FEILD][atom]*ve[mol][VZ_FEILD][atom]);
+    }
+    //pe
+    private double[] potH2O;
+    public final double[] getPE(){ return potH2O; }
+    public final double getAtomPE(int num){ return potH2O[num]; }
+  	//bonds
+  	private int[][] indxww;
+    public final int[][] getBonds(){ return indxww; }
+    //mode
+    enum Mode{KPresKTemp,KDensKTemp,KPresKEn,KDensKEn}
+    private Mode mode=Mode.KPresKTemp;
+
+    // ------------------------------------------------------------------------
+	public EngineWrapper(Config initialConfig) {
+		this.initialConfig = initialConfig;
+
+		ve = raw.ve;
+		xni = raw.xni;
+		yni = raw.yni;
+		zni = raw.zni;
+		rn = raw.rn;
+		potH2O = raw.potH2O;
+		indxww = raw.indxww;
+		clear();
+	}
+	
+    public void fullSave(OutputStream os) throws IOException {
+		FullConfig.save(raw, os);
+	}
+
+	public void fullSave(DataOutputStream os) throws IOException {
+		FullConfig.save(raw, os);
+	}
+
+	public void save(OutputStream os) throws IOException {
+		Config.save(raw, os);
+	}
+
+	public void save(DataOutputStream os) throws IOException {
+		Config.save(raw, os);
+	}
+
+
+	private int oldLatRes=-1;
+	private double oldCut=-1,oldFNum=-1;
+	private PELandscapeCalculator landCalc=null;
+	
+	 public int[] generatePeMatrix(ArrayFinal<Ion> ions, int latRes, double cut, float x) {
+		if(landCalc==null||oldLatRes!=latRes||oldCut!=cut)landCalc=new PELandscapeCalculator(latRes,cut);
+		if(oldFNum!=getFNum()) { landCalc.readEngineState(raw); oldFNum=getFNum(); }
+		landCalc.generatePELandscape(ions, x);
+		return landCalc.getLandscape();
+	}
+	
+	 public @Nullable ArrayFinal<Ion> getIons() {
+		return raw.ions;
+	}
+
+	public void removeIons() {
+		raw.remove_ion();
+	}
+	public void insertIons(@Nullable ArrayFinal<Ion> ions) {
+		raw.insert_ion(ions);
+	}
+	public void insertIons(@Nullable ArrayFinal<Ion> ions,Tuple3f position) {
+		raw.insert_ion(ions, position.x, position.y, position.z);
+	}
+	
+	
+	 public int getNumBonds() {
+		return raw.hbonds;
+	}
+
+	 public Tuple3f getBoundsSize() {
+		return new Tuple3f((float) raw.bx, (float) raw.by, (float) raw.bz);
+	}
+
+	 public void setMode(Mode m) {
+		mode = m;
+		switch (mode) {
+			case KPresKTemp: // '\0'
+				raw.kpres = true;
+				raw.ktemp = true;
+				break;
+
+			case KDensKTemp: // '\001'
+				raw.kpres = false;
+				raw.ktemp = true;
+				break;
+
+			case KPresKEn: // '\002'
+				raw.kpres = true;
+				raw.ktemp = false;
+				break;
+
+			case KDensKEn: // '\003'
+				raw.kpres = false;
+				raw.ktemp = false;
+				break;
+		}
+	}
+
+	 public boolean getJumped(int mol, int fld) {
+		return raw.jumped[mol][fld];
+	}
+
+	 public double getPressure() {
+		return raw.apres;
+	}
+
+	 public void setPressure(double value) {
+		raw.setpressure(value);
+	}
+
+	 public double getTemp() {
+		return raw.atemp;
+	}
+
+	 public void setTemp(double value) {
+		raw.setemperature(value);
+	}
+
+	 public double getEnergy() {
+		return 0.0D;
+	}
+
+	 public double getDensity() {
+		return raw.arho;
+	}
+
+	 public void setDensity(double value) {
+		raw.setdensity(value);
+	}
+
+	 public double getTemperature2() {
+		return raw.temp;
+	}
+
+	 public double getDensity2() {
+		return raw.rho;
+	}
+
+	 public double getPressure2() {
+		return raw.pres;
+	}
+
+	 public double getPE2() {
+		return raw.epot;
+	}
+
+	 public double getKE2() {
+		return raw.ekin;
+	}
+
+	 public double getTotalEnergy2() {
+		return raw.eges;
+	}
+
+	private Config initialConfig;
+
+	 public void step() throws ShakeFailException {
+		for (int i = 0; i < frameSteps; i++) {
+			raw.step();
+			setFNum(getFNum() + 1);
+		}
+
+		// ObjLib.boundsSize = getBoundsSize();
+	}
+
+	 public void clear() {
+		setFNum(0);
+		raw.clear();
+		removeIons();
+		if (initialConfig != null) initialConfig.toData(raw);
+		else raw.loadNMolDef(EngineWrapper.numMols);
+		EngineWrapper.numMols = raw.mols;
+		raw.initial();
+		raw.tempav = raw.atemp;
+		raw.presav = raw.apres;
+		raw.rho = raw.arho;
+		raw.hbonds = 0;
+		// ObjLib.boundsSize = getBoundsSize();
+		if (initialConfig != null) initialConfig.toData(raw);
+	}
+
+	private final Engine raw = new Engine();
+
+
+}	
+

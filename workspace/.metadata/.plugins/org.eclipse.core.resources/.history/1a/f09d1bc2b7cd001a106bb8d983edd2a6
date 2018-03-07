@@ -1,0 +1,21 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:02:41 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water;
+/**
+ * <p>TODO document Application
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class Application {
+
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+
+	}
+
+}

@@ -1,0 +1,102 @@
+/*
+ * CREATED ON:    Apr 15, 2006 5:45:32 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.jarch.simulation.snapshot;
+
+import cps.jarch.data.collections.ListView;
+import cps.jarch.simulation.components.AspectLayout;
+import cps.jarch.simulation.components.AspectLayout.Position;
+import cps.jarch.simulation.snapshot.SnapshotsModel.Snap;
+
+import javax.swing.BorderFactory;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.border.Border;
+
+import java.awt.Color;
+import java.awt.GridLayout;
+
+
+/**
+ * <p>TODO document SnapshotChooser, vertical layout
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+//the 'unfocuesed' Snap is the one that is selected but not 
+public class SnapshotChooser {
+	
+	private final class SnapshotComponent{
+		final JComponent titleHolder;
+		final JTextField titleField;
+		
+	}
+	
+	// ------------------------------------------------------------------------
+	//layout components
+	
+	private final JComponent panel;
+	private final AspectLayout layout;
+	//we put titles and shots on separate grids so that the layout
+	//can correctly manage the aspect ratio of shots
+	private final JComponent titles;
+	private final GridLayout titlesGrid;
+	private final JComponent shots;
+	private final GridLayout shotsGrid;
+	
+	// ------------------------------------------------------------------------
+	//layout constants
+	
+	private static final int MED=3;
+	private static final Color FocusedColor=Color.orange.darker();
+	private static final Color UnfocusedColor=Color.
+	private static final Border PanelBorder=BorderFactory.createEmptyBorder(MED,MED,MED,MED);
+	private static final Border TitleBorder=BorderFactory.createEmptyBorder(MED,MED,MED,MED);
+	private static final Border FocusedThumbnailBorder=BorderFactory.createLineBorder(FocusedColor, MED);
+	private static final Border NormalThumbnailBorder=BorderFactory.createEmptyBorder(MED, MED, MED, MED);
+	private static final Border UnfocusedThumbnailBorder=BorderFactory.createLineBorder(UnfocusedColor);
+	
+	// ------------------------------------------------------------------------
+	
+	private final SnapshotsModel model;
+	private final class SnapshotComponents extends ListView<SnapshotsModel.Snap,SnapshotComponent>{
+		@Override protected SnapshotComponent create(Snap newIn, int index) {
+			return null;
+		}
+
+		@Override protected void deleted(SnapshotComponent oldOut, int index) {
+		}
+
+		@Override protected SnapshotComponent update(Snap newInput, SnapshotComponent oldOutput, int index) {
+			deleted(oldOutput,index);
+			create(newInput,index);
+		}
+	}
+	
+	// ------------------------------------------------------------------------
+
+	
+	public SnapshotChooser(SnapshotsModel model) {
+		this.model=model;
+		
+		layout=new AspectLayout();
+		JPanel content=new JPanel(layout);
+		panel=new JScrollPane(content,ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED,
+			ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+		titlesGrid=new GridLayout();
+		titles=new JPanel(titlesGrid);
+		shotsGrid=new GridLayout();
+		shots=new JPanel(shotsGrid);
+		content.add(shots,Position.Center);
+		content.add(titles,Position.North);
+	}
+
+	public JComponent getComponent() {
+		return panel;
+	}
+
+}

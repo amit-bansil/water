@@ -1,0 +1,53 @@
+/*
+ * CREATED ON:    Apr 16, 2006 10:31:50 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water;
+
+import cps.jarch.simulation.snapshot.SnapshotsModel;
+import cps.jarch.simulation.snapshot.SnapshotsModel.Snap;
+import cps.jarch.util.misc.Worker;
+import cps.jarch.util.notes.Constant;
+import cps.water.moleculedisplay.DisplayModel;
+import cps.water.simulation.SimConfig;
+import cps.water.simulation.SimModel;
+
+import java.awt.Image;
+
+/**
+ * <p>TODO document Model
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class Model extends SnapshotsModel.Snap {
+	private final SimModel simModel;
+	private final DisplayModel display;
+	public Model(SimConfig intialConfig,Worker simWorker) {
+		simModel=new SimModel(intialConfig,simWorker);
+		display=new DisplayModel();
+	}
+	//copy contructor
+	private Model(Model orig) {
+		simModel=new SimModel(orig.simModel);
+		display=new DisplayModel();
+		display.read(orig.display);
+	}
+	public @Constant final DisplayModel getDisplay() {
+		return display;
+	}
+	public @Constant final SimModel getSimModel() {
+		return simModel;
+	}
+	@Override protected Snap createCopy() {
+		return new Model(this);
+	}
+	
+	
+	@Override public Image getThumbnail() {
+		return null;
+	}
+	@Override public void requestResizeThumbnail(int width, int height) {
+		
+	}
+}

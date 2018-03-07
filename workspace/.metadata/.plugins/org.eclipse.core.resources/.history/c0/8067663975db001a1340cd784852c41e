@@ -1,0 +1,104 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:02:41 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water;
+
+import cps.jarch.data.event.tools.Link;
+import cps.jarch.gui.util.EDTWorker;
+import cps.jarch.util.misc.Worker;
+import cps.water.AppModel.Model;
+import cps.water.simulation.SimModel;
+
+import javax.swing.SwingUtilities;
+
+import java.lang.reflect.InvocationTargetException;
+
+/**
+ * <p>Main class for starting Water application. Methods should be invoked on EDT only.
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class Application {
+	private final AppModel model;
+	public final AppModel getModel() {
+		return model;
+	}
+	private final GUI gui;
+	//create application
+	public Application() {
+		EDTWorker.checkThread();
+		simWorker=new Worker("SimulationWorker");
+		
+		simWorker.setDaemon(true);
+		simWorker.setPriority(Thread.NORM_PRIORITY);
+		simWorker.start();
+		
+		model=new AppModel(simWorker);
+		gui=new GUI(this);
+		
+		Link runningL=new Link() {
+			@Override public void signal() {
+				if (model.getTimeModel().getRunning(true).get()
+						|| model.getTimeModel().getRunning(false).get()) postUpdate();
+			}
+		};
+		final Link displayChangeL=new Link() {
+			@Override protected void signal() {
+				super.signal();
+				postUpdate();
+			}
+		};
+		Link simChangeL=new Link() {
+			@Override protected void signal() {
+				if(model.primarySelection().get()!=primary||model.secondarySelection().get()!=oldSecondary) {
+					if(primary!=null) primary.getDisplay().getSource().disconnect(displayChangeL);
+					if(secondary!=null) secondary.getDisplay().getSource().disconnect(displayChangeL);
+					
+					primary=model.primarySelection().get();
+					secondary=model.secondarySelection().get();
+					
+					primary.getDisplay().getSource().connect(displayChangeL);
+					secondary.getDisplay().getSource().connect(displayChangeL);
+					
+					postUpdate();
+				}
+			}
+		};
+		model.getTimeModel().getRunning(true).connect(runningL);
+		model.getTimeModel().getRunning(false).connect(runningL);
+	}
+	//make gui visible
+	public final void show() {
+		EDTWorker.checkThread();
+		gui.show();
+	}
+	public final void shutdown() {
+		//do nothing
+	}
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		//run on EDT
+		try {
+			SwingUtilities.invokeAndWait(new Runnable() {
+				public void run() {
+					//TODO: show splashscreen,parse input files/parameters
+					new Application().show();
+				}
+			});
+		} catch (InterruptedException e) {
+			//should not happen
+			throw new Error(e);
+		} catch (InvocationTargetException e) {
+			//should not happen
+			throw new Error(e);
+		}
+	}
+
+	
+	private final Worker simWorker;
+	AppModel.Model primary,secondary;
+}

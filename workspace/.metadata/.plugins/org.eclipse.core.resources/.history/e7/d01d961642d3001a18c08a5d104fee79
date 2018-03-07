@@ -1,0 +1,23 @@
+/*
+ * CREATED ON:    Apr 23, 2006 11:25:28 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import javax.media.opengl.GL;
+import javax.media.opengl.glu.GLU;
+
+/**
+ * <p>TODO document GLAccess
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+class GLAccess {
+	private final GL gl;
+	private final GLU glu;
+	GLAccss(GL gl,GLU glu) {
+		this.gl=gl;
+		this.glu=glu;
+	}
+}

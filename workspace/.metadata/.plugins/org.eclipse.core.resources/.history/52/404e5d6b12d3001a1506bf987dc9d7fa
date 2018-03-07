@@ -1,0 +1,157 @@
+/*
+ * CREATED ON:    Apr 23, 2006 5:30:28 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.simulation;
+
+import cps.jarch.data.value.RWValue;
+import cps.jarch.data.value.tools.BoundedValue;
+import cps.jarch.data.value.tools.RWValueImp;
+import cps.jarch.util.collections.ArrayFinal;
+import cps.jarch.util.collections.CursorableLinkedList;
+
+import java.util.Iterator;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+/**
+ * <p>TODO document InputParameters
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class InputParameters {
+	enum Mode {
+		KPresKTemp, KDensKTemp, KPresKEn, KDensKEn
+	}
+	InputParameters(ReentrantReadWriteLock lock){
+		mode=new RWValueImp<Mode>(Mode.KPresKTemp,false,lock);
+		desiredTemperature=new BoundedValue<Float>(1f,1f,1000f,lock);
+		desiredPressure=new BoundedValue<Float>(1f,-1000f,1000f,lock);
+		desiredDensity=new BoundedValue<Float>(.5f,.001f,.99999f,lock);
+	}
+	private final RWValue<Mode> mode;
+	private final BoundedValue<Float> desiredTemperature;
+	private final BoundedValue<Float> desiredPressure;
+	private final BoundedValue<Float> desiredDensity;
+	
+	
+	public final BoundedValue<Float> desiredDensity(){
+		return desiredDensity;
+	}
+	
+	public final BoundedValue<Float> desiredPressure(){
+		return desiredPressure;
+	}
+	public final BoundedValue<Float> desiredTemperature(){
+		return desiredTemperature;
+	}
+	public final RWValue<Mode> mode(){
+		return mode;
+	}
+
+	private Mode oldMode;
+	private float oldTemp,oldPres,oldDens;
+	
+	public final void apply(Engine raw) {
+		if (oldMode != mode.get()) {
+			switch (mode.get()) {
+				case KPresKTemp: // '\0'
+					raw.kpres = true;
+					raw.ktemp = true;
+					break;
+
+				case KDensKTemp: // '\001'
+					raw.kpres = false;
+					raw.ktemp = true;
+					break;
+
+				case KPresKEn: // '\002'
+					raw.kpres = true;
+					raw.ktemp = false;
+					break;
+
+				case KDensKEn: // '\003'
+					raw.kpres = false;
+					raw.ktemp = false;
+					break;
+			}
+			oldMode = mode.get();
+		}
+		if (raw.ktemp) {
+			if (oldTemp != desiredTemperature.get()) {
+				oldTemp = desiredTemperature.get();
+				raw.setemperature(oldTemp);
+			}
+		}
+		if (raw.kpres) {
+			if (oldPres != desiredPressure.get()) {
+				oldPres = desiredPressure.get();
+				raw.setpressure(oldPres);
+			}
+		} else {// kdens
+			if (oldDens != desiredDensity.get()) {
+				oldDens = desiredDensity.get();
+				raw.setdensity(oldDens);
+			}
+		}
+	}
+
+	public void clear(Engine raw) {
+		oldTemp=(float)raw.etemp;desiredTemperature.setUnchecked(oldTemp);
+		oldPres=(float)raw.epres;desiredPressure.setUnchecked(oldPres);
+		oldDens=(float)raw.erho;desiredDensity.setUnchecked(oldDens);
+		oldMode=Mode.KPresKTemp;mode.set(oldMode);
+	}
+}
+/*
+private int nextRecord;
+private abstract class DataSet {
+	private final String name;
+
+	public DataSet(String name) {
+		this.name = name;
+	}
+
+	@Override public final String toString() {
+		return name;
+	}
+
+	abstract float getValue();
+}
+
+private final ArrayFinal<DataSet> dataSets = ArrayFinal.create(
+	new DataSet("Temperature") {
+		@Override float getValue() {return (float)raw.temp;}},
+	new DataSet("Density") {
+		@Override float getValue() {return (float)raw.rho;}},
+	new DataSet("Pressure") {
+		@Override float getValue() {return (float)raw.temp;}},
+	new DataSet("Potential Energy") {
+		@Override float getValue() {return (float)raw.epot;}},
+	new DataSet("Kinetic Energy") { 
+		@Override float getValue() {return (float)raw.ekin;}},
+	new DataSet("Total Energy") { 
+		@Override float getValue() {return (float)raw.eges;}},
+	new DataSet("Volume") { 
+		@Override float getValue() {return (float)(raw.bx*raw.by*raw.bz);}},
+	new DataSet("Time") { 
+		@Override float getValue() {return getFrameNumber();}}
+);
+
+private final CursorableLinkedList recordings=new CursorableLinkedList();
+public final int getRecordingCount() {	
+	return recordings.size();
+}
+@SuppressWarnings("unchecked") public final Iterator<ArrayFinal<Float>> getRecordings(){
+	return recordings.listIterator();
+}
+
+private final BoundedValue<Integer> recordStepSize=new BoundedValue<Integer>(5,1,500,lock);
+private final BoundedValue<Integer> maxRecordingCount=new BoundedValue<Integer>(200,50,500,lock);
+public final BoundedValue<Integer> maxRecordingCount(){
+	return maxRecordingCount;
+}
+public final BoundedValue<Integer> recordStepSize(){
+	return recordStepSize;
+}
+*/

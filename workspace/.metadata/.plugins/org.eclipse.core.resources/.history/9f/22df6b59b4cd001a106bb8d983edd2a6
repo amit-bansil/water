@@ -1,0 +1,5 @@
+Java 3D v1.4.0 i586 binary release 
+source archives assembled from cvs checkouts of rel-1_4_0-fcs branch of resp. modules at cvs.dev.java.net:/cvs
+j3dcore-src was merged from j3d-core module rel-1_4_0-fcs branch src\classes\win32 & src\classes\share dirs
+j3dutils-src was merged from j3d-core-utils module rel-1_4_0-fcs branch src\classes\
+downloaded 3/14/06 from https://java3d.dev.java.net/binary-builds.html

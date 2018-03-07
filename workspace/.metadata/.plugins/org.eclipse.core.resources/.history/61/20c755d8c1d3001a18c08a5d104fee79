@@ -1,0 +1,41 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:06:39 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import cps.jarch.data.value.tools.BoundedValue;
+import cps.jarch.data.value.tools.RWFlag;
+
+/**
+ * <p>TODO document DisplayModel
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class DisplayModel {
+	public static enum ColorScheme{
+		Type("Type"),KineticEnergy("Kinetic Energy"),PotentialEnergy("Potential Energy");
+		private final String title;
+		private ColorScheme(String title) {
+			this.title=title;
+		}
+		public String toString() {
+			return title;
+		}
+	}
+	
+	private final RWFlag shrinkMolecules=new RWFlag(true);
+	public final RWFlag shrinkMolecules() {
+		return shrinkMolecules;
+	}
+	private final BoundedValue<Float> cameraRX=new BoundedValue<Float>(0f,0f,360f);
+	public final BoundedValue<Float> cameraRX(){
+		return cameraRX;
+	}
+	private final BoundedValue<Float> cameraRY=new BoundedValue<Float>(0f,-180f,180f);
+	public final BoundedValue<Float> cameraRY(){
+		return cameraRY;
+	}
+	private final BoundedValue<Float> cameraZoom=new BoundedValue<Float>(1f,.5f,10f);//0 is closest
+}

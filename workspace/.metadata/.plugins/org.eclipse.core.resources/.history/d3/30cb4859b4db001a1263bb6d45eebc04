@@ -1,0 +1,14 @@
+/*
+ * CREATED ON:    May 4, 2006 5:15:11 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water;
+/**
+ * <p>TODO document RotationBinding
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class RotationBinding {
+
+}

@@ -1,0 +1,14 @@
+/*
+ * CREATED ON:    Apr 29, 2006 6:03:40 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.jarch.gui.util;
+/**
+ * <p>TODO document AspectLayout
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class AspectLayout {
+
+}

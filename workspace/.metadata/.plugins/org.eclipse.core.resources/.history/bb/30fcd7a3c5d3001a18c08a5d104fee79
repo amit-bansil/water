@@ -1,0 +1,14 @@
+/*
+ * CREATED ON:    Apr 24, 2006 3:06:39 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.util;
+/**
+ * <p>TODO document JGears
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class JGears {
+
+}

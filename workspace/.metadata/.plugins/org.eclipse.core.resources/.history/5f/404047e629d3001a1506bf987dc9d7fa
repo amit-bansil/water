@@ -1,0 +1,14 @@
+/*
+ * CREATED ON:    Apr 23, 2006 5:47:37 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.simulation;
+/**
+ * <p>TODO document OutputParameters
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class OutputParameters {
+
+}

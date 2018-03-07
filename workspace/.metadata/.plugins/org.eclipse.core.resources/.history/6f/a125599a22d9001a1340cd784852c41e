@@ -1,0 +1,375 @@
+/*
+ * IOManager.java
+ * CREATED:    Jan 8, 2005 8:11:23 PM
+ * AUTHOR:     Amit Bansil
+ * PROJECT:    CELESTFramework
+ * 
+ * Copyright 2005 The Center for Polymer Studies,
+ * Boston University, all rights reserved.
+ * */
+package cps.jarch.application.io;
+
+import cps.jarch.application.ApplicationDescription;
+import cps.jarch.data.DataUtils;
+import cps.jarch.data.event.tools.Link;
+import cps.jarch.data.event.tools.Source;
+import cps.jarch.data.event.tools.SourceImp;
+import cps.jarch.data.io.CompositeDataBuilder;
+import cps.jarch.data.io.ObjectInputStreamEx;
+import cps.jarch.data.io.ObjectOutputStreamEx;
+import cps.jarch.data.io.SaveableData;
+import cps.jarch.data.io.SaveableDataProxy;
+import cps.jarch.util.misc.LogEx;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.EventObject;
+
+/**
+ * handles loading and saving of a document represented by registered document
+ * data objects to and from a VirtualFile. Also manages versioning, providing as
+ * much backward compatibilty as possible. Forward compatibilty explicitly
+ * prevented.
+ * 
+ * 
+ * TODO progress TODO add doc change support
+ * 
+ * @version 1.1 added stateSaved support,lumped together propertychange support
+ * @version 1.0
+ * @author Amit Bansil
+ */
+public class DocumentManager {
+
+	// ------------------------------------------------------------------------
+	// CONSTANTS
+	// ------------------------------------------------------------------------
+	/**
+	 * When true any unneccessary information such as debugging data is excluded
+	 * from files.
+	 */
+	public static final boolean COMPRESS_OUTPUT = true;
+
+	/**
+	 * Versioning flag. As new document types are introduced this can be
+	 * checking the header for this flag can be used to check for backward
+	 * compatibilty.
+	 */
+	private static final String DOCUMENT_V1_TYPE = "CELEST 1.0 Document";
+
+	// ------------------------------------------------------------------------
+	// LOGGING
+	// ------------------------------------------------------------------------
+
+	private static final LogEx<DocumentManager> log = LogEx
+		.createClassLog(DocumentManager.class);
+	static {
+		log.config("Document Type={0}", DOCUMENT_V1_TYPE);
+		log.config("CompressOutput={0}", COMPRESS_OUTPUT);
+	}
+
+	// ------------------------------------------------------------------------
+	// MEMBERS
+	// ------------------------------------------------------------------------
+
+	/**
+	 * document data registered in here
+	 */
+	private final CompositeDataBuilder dataBuilder = new CompositeDataBuilder(5);
+
+	SaveableData docData;
+
+	private VirtualFile documentFile;
+
+	private final ApplicationDescription appDesc;
+
+	boolean stateSaved;
+
+	public final boolean isStateSaved() {
+		return stateSaved;
+	}
+
+	// access-may be null. in which case we're blank
+	public final VirtualFile getDocumentFile() {
+		return documentFile;
+	}
+
+	private final SourceImp sourceSupport = new SourceImp(this);
+
+	public final Source getChangeSupport() {
+		return sourceSupport;
+	}
+
+	// ------------------------------------------------------------------------
+	// SETUP
+	// ------------------------------------------------------------------------
+
+	public DocumentManager(ApplicationDescription appDesc) {
+		this.appDesc = appDesc;
+		documentFile = null;
+		stateSaved = false;
+	}
+	public final void registerDocumentData(String name,SaveableDataProxy d) {
+		registerDocumentData(name,d.getData());
+	}
+	public final void registerDocumentData(String name, SaveableData d) {
+		if (docData != null)
+			throw new IllegalStateException("data already initialized");
+		log.debugEnter(this, "name, d", name, d);
+		dataBuilder.regChild(d, name);
+	}
+
+	public final void initialize() {
+		docData = dataBuilder.create();
+		setupDocSavedSupport();
+	}
+
+	// ------------------------------------------------------------------------
+	// INTERNAL LOGIC
+	// ------------------------------------------------------------------------
+	private boolean stateChangeLConnected=false;
+	private final void setupDocSavedSupport() {
+		// we only listen for changes to doc data when the state has been saved
+		// this is an important optimization since compositedatabuilders
+		// brodcast listeners to children.
+		final Link stateChangeL = new Link() {
+			public void receive(EventObject event) {
+				stateSaved = false;
+				sourceSupport.sendEvent();
+			}
+		};
+		DataUtils.linkAndSync(sourceSupport,new Link() {
+			public void receive(EventObject event) {
+				//abort if we are already connected when state becomes saved
+				//or if we were already disconnected when state becomes unsaved
+				if(stateChangeLConnected==stateSaved)return;
+				if (stateSaved) {
+					log.debug(DocumentManager.this,"connecting global stateChangeL");
+					docData.connect(stateChangeL);
+				}
+				else {
+					if(!stateChangeLConnected)return;
+					log.debug(DocumentManager.this,"disconnecting global stateChangeL");
+					docData.disconnect(stateChangeL);
+				}
+				
+				stateChangeLConnected=stateSaved;
+			}
+		});
+	}
+
+	/**
+	 * internal hook to update members
+	 */
+	private final void updateDocData(VirtualFile lDocData, boolean lStateSaved) {
+		documentFile = lDocData;
+		this.stateSaved = lStateSaved;
+		sourceSupport.sendEvent();
+	}
+
+	/**
+	 * TEST error checking code
+	 * 
+	 * @param f
+	 *            file to load from, can't be null
+	 * @throws IOException
+	 */
+	private final void _loadDocument(VirtualFile f) throws IOException {
+		log.info(this,"loading {0}", f);
+		if (f == null) throw new NullPointerException("no document specified");
+		// open stream-???will in get closed on error properly???
+		InputStream _in;
+
+		_in = f.getInputStream();
+		log.debug(this,"file opened");
+		// readdata
+		try {
+
+			ObjectInputStreamEx in = new ObjectInputStreamEx(
+				new BufferedInputStream(_in));
+
+			readHeader(in);
+
+			// now that we know we are (probably) ok lets kill the old before
+			// opening the new
+			// this is not needed
+			// if (documentFile.get() != null) dataHolder.close();
+
+			try {
+				docData.read(in);
+				updateDocData(f, true);
+			} catch (IOException e) {
+				// really should not fail loading here
+				// TODO this is not very good
+				// when there is not really a meaingful blank doc
+				loadBlankDocument();
+				throw e;
+			}
+		} finally {
+			_in.close();
+		}
+	}
+
+	private final void _save(VirtualFile f) throws IOException {
+		OutputStream _out;
+
+		_out = f.getOutputStream();
+
+		// readdata
+		try {
+			ObjectOutputStreamEx out = new ObjectOutputStreamEx(
+				new BufferedOutputStream(_out), COMPRESS_OUTPUT);
+			// write header
+			out.writeUTF(DOCUMENT_V1_TYPE);
+			out.writeUTF(appDesc.getIDName());
+			out.writeUTF(appDesc.getFullName());
+			out.writeLong(appDesc.getBuildNumber());
+
+			docData.write(out);
+
+			out.flush();
+
+			updateDocData(f, true);
+		} finally {
+			_out.close();
+		}
+	}
+
+	// checks for compatibility of file being read
+	// must be by same app with bnum <= cur.
+	private void readHeader(ObjectInputStreamEx in) throws IOException {
+		log.debug(this,"loading header");
+		// read header
+		// as new header types are created switch on doc type
+		// note order, basically fail fast so we don't read garbage
+		String docType = in.readUTF();
+		if (!docType.equals(DOCUMENT_V1_TYPE))
+			throw new IncompDocException(IncompDocException.Cause.DOC_TYPE,
+				DOCUMENT_V1_TYPE, docType);
+		log.debug(this, "doc type={0}", docType);
+		String appIDName = in.readUTF();
+		String appIDNameEx = appDesc.getIDName();
+		if (!appIDName.equals(appIDNameEx))
+			throw new IncompDocException(IncompDocException.Cause.APP_ID,
+				appIDNameEx, appIDName);
+		log.debug(this, "doc app id={0}", appIDName);
+
+		String fullAppName = in.readUTF();// for reporting only
+		long bNum = in.readLong();
+
+		log.debug(this, "doc app name={0}", fullAppName);
+		if (bNum < appDesc.getBuildNumber())
+			throw new IncompDocException(IncompDocException.Cause.APP_VERSION,
+				Long.toString(appDesc.getBuildNumber()), Long.toString(bNum));
+	}
+
+	// ------------------------------------------------------------------------
+	// PUBLIC ACTIONS
+	// ------------------------------------------------------------------------
+
+	// close-reverts everything
+	public final void loadBlankDocument() {
+		log.info(this,"loading blank document");
+		// do close
+		docData.loadInitial();
+
+		updateDocData(null, true);
+	}
+
+	public final void loadDocument(VirtualFile f) throws IOException {
+		try {
+			_loadDocument(f);
+		} catch (IOException e) {
+			log.error(this,"load document {0} failed",e, f);
+			throw e;
+		}
+	}
+
+	/**
+	 * reloads document from current documentFile
+	 * 
+	 * @throws IllegalStateException
+	 *             if no document loaded
+	 * @throws IOException
+	 *             if load fails
+	 */
+	public final void reloadDocument() throws IOException {
+		if (documentFile == null)
+			throw new IllegalStateException("no document loaded");
+		log.debugEnter(this);
+		loadDocument(documentFile);
+	}
+
+	/**
+	 * @throws IllegalStateException
+	 *             if f==null||f is not writeable
+	 * @throws IOException
+	 */
+	public final void saveDocument() throws IOException {
+		VirtualFile f = documentFile;
+		if (f == null) throw new IllegalStateException("no file");
+		if (!f.canWrite())
+			throw new IllegalStateException("can't write " + f.getName());
+		saveDocument(f);
+	}
+
+	/**
+	 * @param f
+	 *            file to save to
+	 * @throws IllegalStateException
+	 *             if f==null||f is not writeable
+	 * @throws IOException
+	 */
+	public final void saveDocument(VirtualFile f) throws IOException {
+		log.debugEnter(this, "f", f);
+		try {
+			_save(f);
+		} catch (IOException e) {
+			log.error(this,"error saving document to {0}",e, f);
+			throw e;
+		}
+	}
+
+	// ------------------------------------------------------------------------
+	// IncompatibleDocumentException
+	// ------------------------------------------------------------------------
+	// thrown when the file being read is not readable by the current app
+//	@SuppressWarnings({"ClassTooDeepInInheritanceTree"})
+    private static class IncompDocException extends IOException {
+
+		private static final long serialVersionUID = 3688503290400616760L;
+
+		public static enum Cause {
+			DOC_TYPE, APP_ID, APP_VERSION
+		}
+
+        private final Cause incompatibility;
+
+		private final String expectedVersion, givenVersion;
+
+		public IncompDocException(Cause versionType, String expectedVersion,
+				String givenVersion) {
+			super("The '" + versionType + "' version is '" + givenVersion
+					+ "' which is not compatible with the expected version "
+					+ givenVersion);
+			this.incompatibility = versionType;
+			this.expectedVersion = expectedVersion;
+			this.givenVersion = givenVersion;
+		}
+
+		public String getExpectedVersion() {
+			return expectedVersion;
+		}
+
+		public String getGivenVersion() {
+			return givenVersion;
+		}
+
+		public Cause getIncompatibility() {
+			return incompatibility;
+		}
+	}
+
+}

@@ -1,0 +1,42 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:05:59 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import javax.swing.Box;
+import javax.swing.JPanel;
+
+/**
+ * <p>TODO document DsiplayEditor
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class DisplayControls{
+	private DisplayModel model;
+	private final JComponent panel;
+	
+	public DisplayControls(final DisplayModel model) {
+		super();
+		this.model = model;
+		panel=Box.createHorizontalBox();
+	}
+
+	/**
+	 * @return the model
+	 */
+	public DisplayModel getModel() {
+		return model;
+	}
+
+	/**
+	 * @param model the model to set
+	 */
+	public void setModel(DisplayModel model) {
+		this.model = model;
+	}
+	public final JComponent getPanel() {
+		return JComponent;
+	}
+}

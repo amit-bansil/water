@@ -1,0 +1,149 @@
+#
+# An unexpected error has been detected by HotSpot Virtual Machine:
+#
+#  EXCEPTION_ACCESS_VIOLATION (0xc0000005) at pc=0x6d631e27, pid=904, tid=308
+#
+# Java VM: Java HotSpot(TM) Client VM (1.5.0-beta2-b51 mixed mode, sharing)
+# Problematic frame:
+# V  [jvm.dll+0x1e27]
+#
+
+---------------  T H R E A D  ---------------
+
+Current thread (0x009f6b90):  VMThread [id=308]
+
+siginfo: ExceptionCode=0xc0000005, reading address 0x00000038
+
+Registers:
+EAX=0x00000008, EBX=0x009dd1a0, ECX=0x22ae0000, EDX=0x00000008
+ESP=0x02b6fbc8, EBP=0x02b6fbe8, ESI=0x22ae0000, EDI=0x02b6fce4
+EIP=0x6d631e27, EFLAGS=0x00010202
+
+Top of Stack: (sp=0x02b6fbc8)
+0x02b6fbc8:   22ae0000 6d692793 00000008 02b6fce4
+0x02b6fbd8:   031e6aa4 00000017 009dd1a0 009dd1a0
+0x02b6fbe8:   02b6fc18 6d691aac 22ae0000 031e6aa4
+0x02b6fbf8:   031e6aa4 031e6a48 6d6c64eb 031e6aa4
+0x02b6fc08:   02b6fce4 02b6fce4 00000000 009c8d18
+0x02b6fc18:   02b6fc3c 6d6c62c8 02b6fce4 009dcf08
+0x02b6fc28:   6d69c9f9 02b6fce4 009dcf08 009dd1a0
+0x02b6fc38:   00000000 02b6fd34 6d692433 00000000 
+
+Instructions: (pc=0x6d631e27)
+0x6d631e17:   e8 ac 19 06 00 5f 5e c9 c3 8b 54 24 04 56 8b f1
+0x6d631e27:   8b 42 30 85 c0 7f 25 7d 1b 83 c9 ff 2b c8 8b 46 
+
+
+Stack: [0x02a70000,0x02b70000),  sp=0x02b6fbc8,  free space=1022k
+Native frames: (J=compiled Java code, j=interpreted, Vv=VM code, C=native code)
+V  [jvm.dll+0x1e27]
+V  [jvm.dll+0x61aac]
+V  [jvm.dll+0x962c8]
+V  [jvm.dll+0x62433]
+V  [jvm.dll+0x6c7fd]
+V  [jvm.dll+0x5048e]
+V  [jvm.dll+0x6c97a]
+V  [jvm.dll+0x116c75]
+V  [jvm.dll+0x11674c]
+V  [jvm.dll+0x1168ec]
+V  [jvm.dll+0x116681]
+C  [MSVCRT.dll+0x27fb8]
+C  [kernel32.dll+0x1d33b]
+
+VM_Operation (0x03c7f7a0): generation collection for allocation, mode: safepoint, requested by thread 0x031e0920
+
+
+---------------  P R O C E S S  ---------------
+
+Java Threads: ( => current thread )
+  0x032a0820 JavaThread "Image Fetcher 2" daemon [_thread_blocked, id=3324]
+  0x00356350 JavaThread "DestroyJavaVM" [_thread_blocked, id=2776]
+  0x031e0920 JavaThread "CPS Event Thread" [_thread_blocked, id=2420]
+  0x031dc008 JavaThread "Image Fetcher 1" daemon [_thread_blocked, id=580]
+  0x031ce1d8 JavaThread "AWT-EventQueue-0" [_thread_blocked, id=3288]
+  0x031c9ca0 JavaThread "Java2D Disposer" daemon [_thread_blocked, id=2280]
+  0x00a5e488 JavaThread "Image Fetcher 0" daemon [_thread_blocked, id=3588]
+  0x031c3138 JavaThread "AWT-Windows" daemon [_thread_in_native, id=3096]
+  0x031a1c60 JavaThread "AWT-Shutdown" [_thread_blocked, id=2940]
+  0x009fb7f8 JavaThread "Low Memory Detector" daemon [_thread_blocked, id=888]
+  0x009fa3d8 JavaThread "CompilerThread0" daemon [_thread_blocked, id=2172]
+  0x009f96d0 JavaThread "Signal Dispatcher" daemon [_thread_blocked, id=2936]
+  0x0035f9a8 JavaThread "Finalizer" daemon [_thread_blocked, id=832]
+  0x009d6aa0 JavaThread "Reference Handler" daemon [_thread_blocked, id=4036]
+
+Other Threads:
+=>0x009f6b90 VMThread [id=308]
+  0x009fca00 WatcherThread [id=1176]
+
+VM state:at safepoint (normal execution)
+
+VM Mutex/Monitor currently owned by a thread:  ([mutex/lock_event])
+[0x003559a0/0x00002f28] Threads_lock - owner thread: 0x009f6b90
+[0x00355b20/0x00002eec] Heap_lock - owner thread: 0x031e0920
+
+Heap
+ def new generation   total 576K, used 539K [0x22a60000, 0x22b00000, 0x22f40000)
+  eden space 512K,  97% used [0x22a60000, 0x22add3f8, 0x22ae0000)
+  from space 64K,  60% used [0x22ae0000, 0x22ae9b90, 0x22af0000)
+  to   space 64K,   0% used [0x22af0000, 0x22af0030, 0x22b00000)
+ tenured generation   total 1408K, used 1232K [0x22f40000, 0x230a0000, 0x26a60000)
+   the space 1408K,  87% used [0x22f40000, 0x230740f8, 0x23074200, 0x230a0000)
+ compacting perm gen  total 8192K, used 1320K [0x26a60000, 0x27260000, 0x2aa60000)
+   the space 8192K,  16% used [0x26a60000, 0x26baa070, 0x26baa200, 0x27260000)
+    ro space 8192K,  66% used [0x2aa60000, 0x2afb0a70, 0x2afb0c00, 0x2b260000)
+    rw space 12288K,  46% used [0x2b260000, 0x2b7f3ce0, 0x2b7f3e00, 0x2be60000)
+
+Dynamic libraries:
+0x00400000 - 0x0040c000 	C:\Program Files\Java\jdk1.5.0\bin\javaw.exe
+0x77f50000 - 0x77ff7000 	C:\WINDOWS\System32\ntdll.dll
+0x77e60000 - 0x77f46000 	C:\WINDOWS\system32\kernel32.dll
+0x77dd0000 - 0x77e5d000 	C:\WINDOWS\system32\ADVAPI32.dll
+0x78000000 - 0x78087000 	C:\WINDOWS\system32\RPCRT4.dll
+0x77d40000 - 0x77dcc000 	C:\WINDOWS\system32\USER32.dll
+0x7e090000 - 0x7e0d1000 	C:\WINDOWS\system32\GDI32.dll
+0x77c10000 - 0x77c63000 	C:\WINDOWS\system32\MSVCRT.dll
+0x6d630000 - 0x6d7b4000 	C:\Program Files\Java\jdk1.5.0\jre\bin\client\jvm.dll
+0x76b40000 - 0x76b6c000 	C:\WINDOWS\System32\WINMM.dll
+0x6d280000 - 0x6d288000 	C:\Program Files\Java\jdk1.5.0\jre\bin\hpi.dll
+0x76bf0000 - 0x76bfb000 	C:\WINDOWS\System32\PSAPI.DLL
+0x6d600000 - 0x6d60c000 	C:\Program Files\Java\jdk1.5.0\jre\bin\verify.dll
+0x6d2f0000 - 0x6d30d000 	C:\Program Files\Java\jdk1.5.0\jre\bin\java.dll
+0x6d620000 - 0x6d62f000 	C:\Program Files\Java\jdk1.5.0\jre\bin\zip.dll
+0x6d000000 - 0x6d166000 	C:\Program Files\Java\jdk1.5.0\jre\bin\awt.dll
+0x73000000 - 0x73023000 	C:\WINDOWS\System32\WINSPOOL.DRV
+0x76390000 - 0x763ac000 	C:\WINDOWS\System32\IMM32.dll
+0x771b0000 - 0x772d4000 	C:\WINDOWS\system32\ole32.dll
+0x5ad70000 - 0x5ada4000 	C:\WINDOWS\System32\uxtheme.dll
+0x73760000 - 0x737a4000 	C:\WINDOWS\System32\ddraw.dll
+0x73bc0000 - 0x73bc6000 	C:\WINDOWS\System32\DCIMAN32.dll
+0x73940000 - 0x73a07000 	C:\WINDOWS\System32\D3DIM700.DLL
+0x74720000 - 0x74764000 	C:\WINDOWS\System32\MSCTF.dll
+0x6d240000 - 0x6d27e000 	C:\Program Files\Java\jdk1.5.0\jre\bin\fontmanager.dll
+0x773d0000 - 0x77bca000 	C:\WINDOWS\system32\shell32.dll
+0x70a70000 - 0x70ad4000 	C:\WINDOWS\system32\SHLWAPI.dll
+0x71950000 - 0x71a34000 	C:\WINDOWS\WinSxS\x86_Microsoft.Windows.Common-Controls_6595b64144ccf1df_6.0.2600.1515_x-ww_7bb98b8a\comctl32.dll
+0x77340000 - 0x773cb000 	C:\WINDOWS\system32\comctl32.dll
+0x77120000 - 0x771ab000 	C:\WINDOWS\system32\OLEAUT32.DLL
+0x03d80000 - 0x03da9000 	C:\Project\CPS\VMDL\vmdl2\run\bcp.dll
+
+VM Arguments:
+jvm_args: -ea
+java_command: org.cps.vmdl2.application.VMDL2Application
+
+Environment Variables:
+PATH=C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\Program Files\Common Files\Autodesk Shared\;C:\Program Files\backburner 2\
+USERNAME=Amit Bansil
+OS=Windows_NT
+PROCESSOR_IDENTIFIER=x86 Family 6 Model 4 Stepping 4, AuthenticAMD
+
+
+---------------  S Y S T E M  ---------------
+
+OS: Windows XP Build 2600 Service Pack 1
+
+CPU:total 1 family 6, cmov, cx8, fxsr, mmx
+
+Memory: 4k page, physical 523736k(78456k free), swap 1280492k(767044k free)
+
+vm_info: Java HotSpot(TM) Client VM (1.5.0-beta2-b51) for windows-x86, built on May 13 2004 02:09:25 by "java_re" with MS VC++ 6.0
+

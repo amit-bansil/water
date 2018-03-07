@@ -1,0 +1,275 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:08:41 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.simulation;
+
+import cps.jarch.data.value.RWValue;
+import cps.jarch.data.value.tools.BoundedValue;
+import cps.jarch.data.value.tools.RWValueImp;
+import cps.jarch.util.collections.ArrayFinal;
+import cps.jarch.util.notes.Nullable;
+import cps.water.util.Tuple3f;
+
+/**
+ * <p>TODO document SimModel
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class SimModel {
+	private final Engine raw=new Engine();
+
+	// ------------------------------------------------------------------------
+
+	private int frameNumber;
+
+	public final int getFrameNumber() {
+		return frameNumber;
+	}
+
+	public Tuple3f getBoundsSize() {
+		return new Tuple3f((float) raw.bx, (float) raw.by, (float) raw.bz);
+	}
+
+	// ------------------------------------------------------------------------
+	//atoms
+	public static final int O_ATOM_NUMBER = 2, H1_ATOM_NUMBER = 0, H2_ATOM_NUMBER = 1;
+
+	public final void getAtomPosition(int moleculeNumber, int atomNumber, float[] dst,
+			int dstStart) {
+		dst[dstStart] = raw.rn[moleculeNumber][0][atomNumber];
+		dst[dstStart] = raw.rn[moleculeNumber][1][atomNumber];
+		dst[dstStart] = raw.rn[moleculeNumber][2][atomNumber];
+	}
+
+	private int atomCount;
+
+	public final int getAtomCount() {
+		return atomCount;
+	}
+
+	//ion
+	public final void getIonPosition(int moleculeNumber, float[] dst, int dstStart) {
+		dst[dstStart] = (float) raw.xni[moleculeNumber];
+		dst[dstStart + 1] = (float) raw.yni[moleculeNumber];
+		dst[dstStart + 2] = (float) raw.zni[moleculeNumber];
+	}
+
+	//velocity/energy
+	public final void getAtomVelocity(int moleculeNumber, int atomNumber, double[] dst,
+			int dstStart) {
+		dst[dstStart] = raw.ve[moleculeNumber][0][atomNumber];
+		dst[dstStart] = raw.ve[moleculeNumber][1][atomNumber];
+		dst[dstStart] = raw.ve[moleculeNumber][2][atomNumber];
+	}
+
+	public final float getAtomKineticEnergy(int moleculeNumber, int atomNumber) {
+		return (float) Math.sqrt(raw.ve[moleculeNumber][0][atomNumber]
+				* raw.ve[moleculeNumber][0][atomNumber]
+				+ raw.ve[moleculeNumber][1][atomNumber]
+				* raw.ve[moleculeNumber][1][atomNumber]
+				+ raw.ve[moleculeNumber][2][atomNumber]
+				* raw.ve[moleculeNumber][2][atomNumber]);
+	}
+
+	public final double getMoleculePotentialEnergy(int moleculeNumber) {
+		return raw.potH2O[moleculeNumber];
+	}
+
+	// ------------------------------------------------------------------------
+	//bonds
+	public final void getHBondSrcPosition(int bondNumber, float[] dst, int dstStart) {
+		int srcMolNum = raw.indxww[bondNumber][0];
+		getAtomPosition(srcMolNum, O_ATOM_NUMBER, dst, dstStart);
+	}
+
+	public final void getHBondDstPosition(int bondNumber, float[] dst, int dstStart) {
+		int dstMolNum = raw.indxww[bondNumber][1];
+		int dstAtomNum = raw.indxww[bondNumber][2];
+		getAtomPosition(dstMolNum, dstAtomNum, dst, dstStart);
+	}
+
+	private int hBondCount;
+
+	public int getHBondCount() {
+		return raw.hbonds;
+	}
+
+	// ------------------------------------------------------------------------
+	//ions
+	private int oldLatRes = -1;
+
+	private double oldCut = -1, oldFNum = -1;
+
+	private PELandscapeCalculator landCalc = null;
+
+	public int[] generatePeMatrix(ArrayFinal<Ion> ions, int latRes, double cut, float x) {
+		if (landCalc == null || oldLatRes != latRes || oldCut != cut)
+			landCalc = new PELandscapeCalculator(latRes, cut);
+		if (oldFNum != getFrameNumber()) {
+			landCalc.readEngineState(raw);
+			oldFNum = getFrameNumber();
+		}
+		landCalc.generatePELandscape(ions, x);
+		return landCalc.getLandscape();
+	}
+
+	public @Nullable ArrayFinal<Ion> getIons() {
+		return raw.ions;
+	}
+
+	public void removeIons() {
+		raw.remove_ion();
+	}
+
+	public void insertIons(@Nullable ArrayFinal<Ion> ions) {
+		raw.insert_ion(ions);
+	}
+
+	public void insertIons(@Nullable ArrayFinal<Ion> ions, Tuple3f position) {
+		raw.insert_ion(ions, position.x, position.y, position.z);
+	}
+
+	// ------------------------------------------------------------------------
+	// parameters
+	
+	// ------------------------------------------------------------------------
+	// data
+	
+	enum Mode {
+		KPresKTemp, KDensKTemp, KPresKEn, KDensKEn
+	}
+
+	private final RWValue<Mode> mode=new RWValueImp<Mode>(Mode.KPresKTemp);
+	private final BoundedValue<Float> desiredTemperature=new BoundedValue<Float>(1f,1f,1000f);
+	private final BoundedValue<Float> desiredPressure=new BoundedValue<Float>(1f,-1000f,1000f);
+	private final BoundedValue<Float> desiredDensity=new BoundedValue<Float>(.5f,.001f,.99999f);
+	public final BoundedValue<Float> desiredDensity(){
+		return desiredDensity;
+	}
+	public final BoundedValue<Float> desiredPressure(){
+		return desiredPressure;
+	}
+	public final BoundedValue<Float> desiredTemperature(){
+		return desiredTemperature;
+	}
+	public final RWValue<Mode> mode(){
+		return mode;
+	}
+
+	private static abstract class DataSet {
+		private final String name;
+
+		public DataSet(String name) {
+			this.name = name;
+		}
+
+		@Override public final String toString() {
+			return name;
+		}
+
+		public abstract float getValue(SimModel m);
+	}
+	
+	private final ArrayFinal<DataSet> dataSets = ArrayFinal.create(
+		new DataSet("Temperature") {
+			@Override public float getValue(SimModel m) {return (float)raw.temp;}},
+		new DataSet("Density") {
+			@Override public float getValue(SimModel m) {return (float)raw.rho;}},
+		new DataSet("Pressure") {
+			@Override public float getValue(SimModel m) {return (float)raw.temp;}},
+		new DataSet("Potential Energy") {
+			@Override public float getValue(SimModel m) {return (float)raw.epot;}},
+		new DataSet("Kinetic Energy") { 
+			@Override public float getValue(SimModel m) {return (float)raw.ekin;}},
+		new DataSet("Total Energy") { 
+			@Override public float getValue(SimModel m) {return (float)raw.eges;}},
+		new DataSet("Volume") { 
+			@Override public float getValue(SimModel m) {return (float)(raw.bx*raw.by*raw.bz);}}
+	);
+	// ------------------------------------------------------------------------
+
+	public SimModel(SimConfig initialConfig) {
+		this.initialConfig = initialConfig;
+		clear();
+	}
+
+	private SimConfig initialConfig;
+
+	private Mode oldMode;
+	private float oldTemp,oldPres,oldDens;
+	
+	public void step() throws ShakeFailException {
+		//apply parameters
+		if(oldMode!=mode.get()) {
+			switch (mode.get()) {
+				case KPresKTemp: // '\0'
+					raw.kpres = true;
+					raw.ktemp = true;
+					break;
+
+				case KDensKTemp: // '\001'
+					raw.kpres = false;
+					raw.ktemp = true;
+					break;
+
+				case KPresKEn: // '\002'
+					raw.kpres = true;
+					raw.ktemp = false;
+					break;
+
+				case KDensKEn: // '\003'
+					raw.kpres = false;
+					raw.ktemp = false;
+					break;
+			}
+			oldMode=mode.get();
+		}
+		if(raw.ktemp) {
+			if(oldTemp!=desiredTemperature.get()) {
+				oldTemp=desiredTemperature.get();
+				raw.setemperature(oldTemp);
+			}
+		}
+		if(raw.kpres) {
+			if(oldPres!=desiredPressure.get()) {
+				oldPres=desiredPressure.get();
+				raw.setpressure(oldPres);
+			}
+		}else {//kdens
+			if(oldDens!=desiredDensity.get()) {
+				oldDens=desiredDensity.get();
+				raw.setdensity(oldDens);
+			}
+		}
+		
+		
+		raw.step();
+		frameNumber += 1;
+
+		hBondCount = raw.hbonds;
+	}
+
+	public void clear() {
+		frameNumber=0;
+		raw.clear();
+		removeIons();
+		initialConfig.toData(raw);
+		raw.initial();
+		raw.tempav = raw.atemp;
+		raw.presav = raw.apres;
+		raw.rho = raw.arho;
+		hBondCount=raw.hbonds = 0;
+		// ObjLib.boundsSize = getBoundsSize();
+		//if (initialConfig != null) initialConfig.toData(raw);
+		atomCount = raw.mols;
+		//clearParameters
+		oldTemp=(float)raw.etemp;desiredTemperature.setUnchecked(oldTemp);
+		oldPres=(float)raw.epres;desiredPressure.setUnchecked(oldPres);
+		oldDens=(float)raw.erho;desiredDensity.setUnchecked(oldDens);
+		oldMode=Mode.KPresKTemp;
+		
+		
+	}
+}

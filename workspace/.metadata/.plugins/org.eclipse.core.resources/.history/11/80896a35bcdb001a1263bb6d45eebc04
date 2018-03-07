@@ -1,0 +1,236 @@
+/*
+ * NumberBinder.java
+ * CREATED:    Jun 19, 2005 2:51:44 PM
+ * AUTHOR:     Amit Bansil
+ * PROJECT:    celest-framework-gui
+ * 
+ * Copyright 2005 The Center for Polymer Studies,
+ * Boston University, all rights reserved.
+ * */
+package cps.jarch.gui.data;
+
+import cps.jarch.data.event.Unlinker;
+import cps.jarch.data.event.tools.Link;
+import cps.jarch.data.value.CheckedValue;
+import cps.jarch.data.value.RWValue;
+import cps.jarch.data.value.RejectedValueException;
+import cps.jarch.data.value.tools.BoundedValue;
+
+import javax.swing.JSlider;
+import javax.swing.JSpinner;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+
+import java.util.EventObject;
+
+public class NumberBinder {
+
+	public static Unlinker bindIntSpinner(final BoundedValue<Integer> source,
+			JSpinner target) {
+		forceRange(source,target);
+		return _bindIntSpinner(source, target);
+	}
+
+	public static Unlinker bindIntSpinner(final RWValue<Integer> source,
+			JSpinner target) {
+		checkNumberSpinner(target);
+		return _bindIntSpinner(source, target);
+	}
+
+	/**
+	 * binds a number spinner to a source property. callers must ensure that the
+	 * source.set will accept any value the spinner produces. value is pushed
+	 * from source->target.
+	 * 
+	 * @param source
+	 */
+	private static Unlinker _bindIntSpinner(final CheckedValue<Integer> source,
+			final JSpinner target) {
+		// source->target
+		final Link sourceListener = new Link() {
+			@Override public void signal(EventObject event) {
+				target.setValue(source.get());
+			}
+		};
+		source.connect(sourceListener);
+		// target->source
+		final ChangeListener targetListener = new ChangeListener() {
+			public void stateChanged(ChangeEvent e) {
+				Number v = (Number) target.getValue();
+				// TODO warn on overflows/rounding, log error instead of throwing
+				try {
+					source.checkedSet(v.intValue());
+				} catch (RejectedValueException e1) {
+					// should not happen
+					throw new Error(e1);
+				}
+			}
+		};
+		target.addChangeListener(targetListener);
+		// push initial value
+		target.setValue(source.get());
+		// allow unbinding
+		return new Unlinker() {
+			public void unlink() {
+				source.disconnect(sourceListener);
+				target.removeChangeListener(targetListener);
+			}
+		};
+	}
+
+	public static Unlinker bindFloatSpinner(final BoundedValue<Float> source,
+			JSpinner target) {
+		forceRange(source,target);
+		return _bindFloatSpinner(source, target);
+	}
+
+	public static Unlinker bindFloatSpinner(final RWValue<Float> source,
+			JSpinner target) {
+		checkNumberSpinner(target);
+		return _bindFloatSpinner(source, target);
+	}
+
+	/**
+	 * binds a number spinner to a source property.  callers must ensure that the
+	 * source.set will accept any value the spinner produces. value is pushed
+	 * from source->target.
+	 */
+	private static Unlinker _bindFloatSpinner(final CheckedValue<Float> source,
+			final JSpinner target) {
+		checkNumberSpinner(target);
+		// source->target
+		final Link sourceListener = new Link() {
+			@Override public void signal(EventObject event) {
+				target.setValue(source.get());
+			}
+		};
+		source.connect(sourceListener);
+		// target->source
+		final ChangeListener targetListener = new ChangeListener() {
+			public void stateChanged(ChangeEvent e) {
+				final Number v = (Number) target.getValue();
+				// TODO warn on overflows/rounding, log error instead of throwing
+				try {
+					source.checkedSet(v.floatValue());
+				} catch (RejectedValueException e1) {
+					//should not happen
+					throw new Error(e1);
+				}
+			}
+		};
+		target.addChangeListener(targetListener);
+		// push initial value
+		target.setValue(source.get());
+		// allow unbinding
+		return new Unlinker() {
+			public void unlink() {
+				source.disconnect(sourceListener);
+				target.removeChangeListener(targetListener);
+			}
+		};
+	}
+
+	/**
+	 * Binds a slider to a numberspinner. the target's max&min are ignored. <br>
+	 * the enabled property is also synced. Notice that since slider's only
+	 * accept ints minStep is used to convert between the two and thus value
+	 * changes are rounded to minStep accurracy.
+	 * 
+	 * TODO check rounding/overflow
+	 */
+	public static Unlinker bindSlider(final JSpinner source, final JSlider target,
+			final double minStep) {
+        //noinspection FloatingPointEquality
+        if (minStep == 0) throw new IllegalArgumentException("minStep==0");
+		// an extent of 1 will produce a change of minStep after conversion
+		target.setExtent(1);
+		// spinner->slider
+		final ChangeListener sourceChangeL = new ChangeListener() {
+			public void stateChanged(ChangeEvent e) {
+				final SpinnerNumberModel m = (SpinnerNumberModel) source
+					.getModel();
+	
+				final int min = (int) Math.round(((Number) m.getMinimum())
+					.doubleValue()
+						/ minStep);
+				final int max = (int) Math.round(((Number) m.getMaximum())
+					.doubleValue()
+						/ minStep);
+				final int cur = (int) Math.round((m.getNumber()).doubleValue()
+						/ minStep);
+	
+				target.setMinimum(0);
+	
+				// add one to max since the slider's model maxesout at
+				// max-extent
+	
+				target.setMaximum((max - min) + 1);
+	
+				int newV = cur - min;
+				if (newV != target.getValue()) {
+					target.setValue(newV);
+				}
+			}
+		};
+		// add to spinner to allow for model change
+		source.addChangeListener(sourceChangeL);
+		// initially down sync
+		sourceChangeL.stateChanged(null);
+		// slider->spinner
+		// allow value only upsync
+		final ChangeListener targetChangeL=new ChangeListener() {
+			public void stateChanged(ChangeEvent e) {
+				final SpinnerNumberModel m = (SpinnerNumberModel) source
+					.getModel();
+				final int min = (int) Math.round(((Number) m.getMinimum())
+					.doubleValue()
+						/ minStep);
+	
+				// integer comparison is done to avoid circularly setting
+				// values that were changed due to rounding errors
+				final int newV = target.getValue() + min;
+				final int curV = (int) Math.round(((Number) m.getValue())
+					.doubleValue()
+						/ minStep);
+				if (newV != curV) {
+					source.setValue(newV * minStep);
+				}
+			}
+		};
+		target.addChangeListener(targetChangeL);
+	
+		final Unlinker enabledL=BooleanBinder.bindEnabled(source, target);
+		
+		return new Unlinker() {
+			public void unlink() {
+				source.removeChangeListener(sourceChangeL);
+				target.removeChangeListener(targetChangeL);
+				enabledL.unlink();
+			}
+		};
+	}
+
+	/**
+	 * utility to make sure a spinner has a number editor & number model
+	 */
+	private static final void checkNumberSpinner(JSpinner spinner) {
+		if (!(spinner.getEditor() instanceof JSpinner.NumberEditor))
+			throw new IllegalArgumentException(
+				"spinner should have numberEditor");
+		if (!(spinner.getModel() instanceof SpinnerNumberModel))
+			throw new IllegalArgumentException(
+				"spinner should have SpinnerNumberModel");
+	}
+	
+	//take care to pass a bounded value that holds a number, otherwise cast will fail
+    private static void forceRange(
+    		BoundedValue<?> source, JSpinner target) {
+		checkNumberSpinner(target);
+		SpinnerNumberModel model = (SpinnerNumberModel) target.getModel();
+		//need double here for comparable to work
+		model.setMaximum(((Number)source.getMax()).doubleValue());
+		model.setMinimum(((Number)source.getMin()).doubleValue());
+	}
+
+}

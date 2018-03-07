@@ -1,0 +1,17 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:06:39 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import cps.jarch.util.notes.ThreadSafe;
+
+/**
+ * <p>TODO document DisplayModel
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+@ThreadSafe public class DisplayModel {
+	
+}

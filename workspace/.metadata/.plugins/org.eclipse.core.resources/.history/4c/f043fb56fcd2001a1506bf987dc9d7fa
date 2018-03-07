@@ -1,0 +1,11 @@
+package cps.water.moleculedisplay;
+
+import cps.jarch.util.collections.ArrayFinal;
+import cps.jarch.util.notes.Constant;
+import cps.jarch.util.notes.Immutable;
+
+import java.awt.Color;
+import java.util.concurrent.locks.ReadWriteLock;
+
+public class Scene{
+}

@@ -1,0 +1,31 @@
+/*
+ * CREATED ON:    Apr 19, 2006 2:46:14 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.util;
+/**
+ * <p>TODO document IntArrayImp
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class IntArrayImp implements IntArray {
+
+	public void clear() {
+	}
+
+	public void get(int[] dst, int dstStartIndex, int srcStartIndex, int count) {
+	}
+
+	public int get(int index) {
+		return 0;
+	}
+
+	public void set(int[] src, int srcStartIndex, int dstStartIndex, int count) {
+	}
+
+	public int size() {
+		return 0;
+	}
+
+}

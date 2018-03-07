@@ -1,0 +1,14 @@
+/*
+ * CREATED ON:    Apr 19, 2006 11:55:04 AM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.jarch.simulation.snapshot;
+/**
+ * <p>TODO document Snapshot
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class Snapshot {
+
+}

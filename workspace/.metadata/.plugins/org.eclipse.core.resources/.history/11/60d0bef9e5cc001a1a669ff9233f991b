@@ -1,0 +1,29 @@
+/*
+ * CREATED ON:    Apr 15, 2006 8:51:54 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.simulation;
+
+import cps.jarch.util.misc.NullArgumentException;
+import cps.jarch.util.notes.Nullable;
+
+/**
+ * <p>TODO document IonPair
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class IonPair {
+	private final Ion a,b;
+	public final Ion getA() {
+		return a;
+	}
+	public @Nullable final Ion getB() {
+		return b;
+	}
+	public IonPair(Ion a,@Nullable Ion b) {
+		if(a==null)throw new NullArgumentException("a");
+		this.a=a;
+		this.b=b;
+	}
+}

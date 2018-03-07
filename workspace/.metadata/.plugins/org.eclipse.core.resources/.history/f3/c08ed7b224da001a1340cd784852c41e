@@ -1,0 +1,33 @@
+/*
+ * CREATED ON:    May 2, 2006 3:52:27 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water;
+
+import cps.jarch.gui.resources.ImageLoader;
+
+import javax.swing.JComponent;
+
+import java.awt.Graphics;
+import java.awt.Paint;
+import java.awt.TexturePaint;
+import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
+
+/**
+ * <p>TODO document StripedPane
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class StripedPane extends JComponent {
+	private Paint stripedPaint;
+	
+	@Override protected void paintComponent(Graphics g) {
+		if(stripedPaint==null) {
+			BufferedImage bi=ImageLoader.toBufferedImage(ControlFactory.loadIcon("stripes.gif"),this);
+			stripedPaint=new TexturePaint(bi,new Rectangle2D.Float(0,0,bi.getWidth(),bi.getHeight()));
+			
+		}
+	}
+}

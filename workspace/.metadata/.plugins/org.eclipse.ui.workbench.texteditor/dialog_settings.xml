@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="org.eclipse.ui.texteditor.GotoLineAction$GotoLineDialog_dialogBounds">
+		<item key="DIALOG_X_ORIGIN" value="445"/>
+		<item key="DIALOG_Y_ORIGIN" value="411"/>
+	</section>
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">
+		<item key="DIALOG_X_ORIGIN" value="371"/>
+		<item key="DIALOG_Y_ORIGIN" value="655"/>
+	</section>
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
+		<item key="wholeword" value="false"/>
+		<item key="incremental" value="false"/>
+		<item key="isRegEx" value="false"/>
+		<item key="selection" value="captureButton"/>
+		<item key="wrap" value="false"/>
+		<item key="casesensitive" value="false"/>
+		<list key="findhistory">
+			<item value="captureButton"/>
+			<item value="postGL"/>
+			<item value="offscreenImage"/>
+			<item value="viewportX"/>
+			<item value="reshapeX"/>
+			<item value="sendReshape"/>
+			<item value="readBackBytes"/>
+			<item value="offscreenDrawable"/>
+		</list>
+		<list key="replacehistory">
+			<item value=""/>
+			<item value="T"/>
+			<item value="Snapshot"/>
+			<item value="private"/>
+			<item value="Math.abs"/>
+			<item value=","/>
+		</list>
+	</section>
+</section>

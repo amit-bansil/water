@@ -1,0 +1,69 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:05:35 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import cps.jarch.gui.util.ComponentProxy;
+import cps.jarch.util.misc.LogEx;
+import cps.jarch.util.notes.Nullable;
+
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+
+/**
+ * <p>
+ * A {@link ComponentProxy} that shows a 3d representation of a
+ * {@link DisplayModel}. Since DisplayPanels are implemented using a
+ * heavyweight container, they will be rendered on top of any intersecting
+ * lightweight swing components, even if those components are meant to be drawn
+ * on top of the display panel. To work around this:
+ * TODO: doc splitters, pupups (make heavywieght), & scrollpanes/internalframes (don't use).
+ * <li></li></ul>
+ * </p>
+ * 
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class DisplayPanel implements ComponentProxy{
+	private static final LogEx<DisplayPanel> log = LogEx
+		.createClassLog(DisplayPanel.class);
+	
+	public static final void renderSnapshot(DisplayModel model) {
+		log.debugEnter(null, "model", model);
+	}	
+	public DisplayPanel() {
+		component=new JPanel();
+	}
+	private final JComponent component;
+	public JComponent getComponent() {
+		return component;
+	}
+	
+	private DisplayModel model;
+	/**
+	 * @return the model being displayed by this panel or <code>null</code> if none.
+	 */
+	public @Nullable DisplayModel getModel() {
+		return model;
+	}
+
+	/**
+	 * first unlinks this display from the current model returned by
+	 * <code>getModel()</code> and then links it too the specified
+	 * <code>newModel</code> if it is not <code>null</code>.
+	 */
+	public void setModel(@Nullable DisplayModel newModel) {
+		if(model!=null)
+			unlinkModel(model);
+	
+		this.model = newModel;
+		
+		if(newModel!=null) linkModel(newModel);
+	}
+	private void linkModel(DisplayModel newModel) {
+	}
+
+	private void unlinkModel(DisplayModel model2) {
+	}
+}

@@ -1,0 +1,278 @@
+/*
+ * CREATED ON:    Jul 29, 2005 3:23:00 PM
+ * CREATED BY:     Amit Bansil 
+ */
+package cps.jarch.gui.builder;
+
+import cps.jarch.data.event.tools.Link;
+import cps.jarch.data.io.CompositeDataBuilder;
+import cps.jarch.data.io.SaveableData;
+import cps.jarch.data.io.SaveableDataProxy;
+import cps.jarch.data.value.RWValue;
+import cps.jarch.data.value.tools.RWValueImp;
+import cps.jarch.gui.components.CELESTLook;
+import cps.jarch.gui.components.LinkButton;
+import cps.jarch.gui.data.BooleanBinder;
+import cps.jarch.gui.resources.Described;
+import cps.jarch.gui.resources.DescribedImpl;
+import cps.jarch.gui.resources.MessageBundle;
+import cps.jarch.gui.util.ComponentProxy;
+
+import javax.swing.Box;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JSeparator;
+
+import java.awt.Component;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.EventObject;
+import java.util.List;
+
+/**
+ * creates a stack of titled editors that the user can optionally show/hide.
+ * first create and add Editor components, then build to access Component and
+ * SaveableData. Visibility of editors is saved.<br>
+ * ID: $Id$
+ */
+public class EditorPanelBuilder implements ComponentProxy, SaveableDataProxy {
+	public static class Editor {
+		public Editor(Component content,String name) {
+			this(content,name,true);
+		}
+		public Editor(Component content, String name,
+				boolean allowUserHideContent) {
+
+			this.allowUserHideContent = allowUserHideContent;
+			userShown = allowUserHideContent ? new RWValueImp<Boolean>(true)
+					: null;
+
+			// create header
+			label = new VisibilityButton(userShown);
+			label.setName(name);
+
+			// setup content
+			panel = Box.createVerticalBox();
+			final CELESTLook look = CELESTLook.getInstance();
+
+			panel.add(Box.createVerticalStrut(look.getMediumPadSize()));
+			panel.add(new JSeparator());
+			panel.add(Box.createVerticalStrut(look.getSmallPadSize()));
+			panel.add(label);
+
+			Component componentTopBorder = Box.createVerticalStrut(look
+				.getMediumPadSize());
+			panel.add(componentTopBorder);
+			panel.add(content);
+
+			// the extra padding on the bottom of each component should only
+			// be shown when that component is visible and not be added to
+			// the last component
+			editorBottomBorder = Box.createVerticalStrut(CELESTLook
+				.getInstance().getLargePadSize());
+			panel.add(editorBottomBorder);
+			if (allowUserHideContent) {
+				BooleanBinder.bindVisible(userShown, content);
+				BooleanBinder.bindVisible(userShown, componentTopBorder);
+				BooleanBinder.bindVisible(userShown, editorBottomBorder);
+			}
+
+			// visible
+			visible = new RWValueImp<Boolean>(true);
+			BooleanBinder.bindVisible(visible, panel);
+		}
+
+		// ------------------------------------------------------------------------
+		// user hide content
+
+		private boolean allowUserHideContent;
+
+		private final RWValueImp<Boolean> userShown;
+
+		/**
+		 * @return prop is set if user should be allowed to show/hide contents
+		 *         only of this.
+		 */
+		public final boolean allowsUserHideContent() {
+			return allowUserHideContent;
+		}
+
+		/**
+		 * @return prop controlled by user as to whether or not the contents
+		 *         should be shown/hidden. Saved by panel, default is false.
+		 * @throws IllegalStateException
+		 *             if !allowUserHideContent
+		 */
+		public final RWValueImp<Boolean> userShown() {
+			if (!allowUserHideContent)
+				throw new IllegalStateException("!allowUserHideContent");
+			return userShown;
+		}
+
+		// ------------------------------------------------------------------------
+		// label-not a description to allow variance
+		
+		final JLabel label;
+		public final String getName() {
+			return label.getName();
+		}
+
+		public final String getTitle() {
+			return label.getText();
+		}
+
+		public final void setTitle(String title) {
+			label.setText(title);
+		}
+
+		public final void setDescription(String description) {
+			label.setToolTipText(description);
+		}
+
+		public final String getDescription() {
+			return label.getToolTipText();
+		}
+		public final void loadFrom(MessageBundle res) {
+			loadFrom(res,getName());
+		}
+		public final void loadFrom(MessageBundle res,String name) {
+			Described desc=new DescribedImpl(res,name);
+			setTitle(desc.getTitle());
+			setDescription(desc.getDescription());
+		}
+		// ------------------------------------------------------------------------
+		// panel
+		private final JComponent panel;
+
+		private final RWValue<Boolean> visible;
+
+		public final RWValue<Boolean> visible() {
+			return visible;
+		}
+
+		/**
+		 * @return editor with header attached ontop and proper spacings if this
+		 *         is the top editor.
+		 */
+		final JComponent getComponent() {
+			return panel;
+		}
+		private final Component editorBottomBorder;
+		final void setBottom(boolean v) {
+			editorBottomBorder.setVisible(!v);
+		}
+	}
+
+	// ------------------------------------------------------------------------
+	// ------------------------------------------------------------------------
+	// visibilty button, the actual header component
+
+	// TODO & use an unclickable label with (possibly) a circle icon when
+	// the component is not user hideable.
+//	@SuppressWarnings({"ClassTooDeepInInheritanceTree"})
+    private static final class VisibilityButton extends LinkButton {
+		private final RWValue<Boolean> source;
+
+		/**
+		 * creates VisibilityButton. source may be null.
+		 */
+		public VisibilityButton(RWValue<Boolean> src) {
+			super(true);
+			this.source = src;
+			updateIcon();
+
+			setFont(CELESTLook.getInstance().getTitleFont());
+
+			// bind source if we have one
+			if (source != null) {
+				source.connect(new Link() {
+					public void signal(EventObject event) {
+						updateIcon();
+					}
+				});
+				addActionListener(new ActionListener() {
+					public void actionPerformed(ActionEvent e) {
+						source.set(!source.get());
+					}
+				});
+			}
+		}
+
+		protected final void updateIcon() {
+			if (source != null) {
+				setIcon(source.get() ? CELESTLook.getInstance().getIcon(
+					CELESTLook.IconType.OPEN_HANDLE) : CELESTLook.getInstance()
+					.getIcon(CELESTLook.IconType.CLOSE_HANDLE));
+			} else {
+				setIcon(null);
+			}
+		}
+
+		@Override
+		protected final void refresh() {
+			// do nothing since text is set externally by settext
+		}
+	}
+
+	// ------------------------------------------------------------------------
+	public EditorPanelBuilder() {
+		component=Box.createVerticalBox();
+		dataBuilder=new CompositeDataBuilder(4);
+	}
+	private boolean built = false;
+
+	private final JComponent component;
+
+	public JComponent getComponent() {
+		if (!built) throw new IllegalStateException("already built");
+		return component;
+	}
+
+	private SaveableData data;
+
+	public SaveableData getData() {
+		if (!built) throw new IllegalStateException("!built");
+		assert data != null;
+		return data;
+	}
+
+	private final CompositeDataBuilder dataBuilder;
+	private final List<Editor>editors=new ArrayList<Editor>();
+	
+	public void addEditor(Editor e) {
+		if (built) throw new IllegalStateException("already built");
+
+		// reg data
+		if (e.allowsUserHideContent())
+			dataBuilder.regChild(e.userShown(), "EditorShwoing." + e.getName());
+		// add Editor
+		component.add(e.getComponent());		
+		editors.add(e);
+		e.visible().connect(updateBottomLink);
+	}
+
+	public void build() {
+		if (built) throw new IllegalStateException("already built");
+		updateBottom();
+		data=dataBuilder.create();
+		built = true;
+	}
+	private final Link updateBottomLink=new Link() {
+		public void signal(EventObject event) {
+			updateBottom();
+		}
+	};
+	private final void updateBottom() {
+		boolean markedBottom=false;
+		//mark bottomost visible editor as bottom, all others as !bottom
+		for(int i=editors.size()-1; i >= 0;i--){
+			Editor e=editors.get(i);
+			if(!markedBottom&&e.visible().get()) {
+				markedBottom=true;
+				e.setBottom(true);
+			}else e.setBottom(false);
+		}
+		//mark all others as !bottom
+	}
+}

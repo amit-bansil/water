@@ -1,0 +1,5 @@
+1145241989937	Change method 'public cps.jarch.data.value.tools.CheckedValueImp.CheckedValueImp(T defaultValue, boolean allowsNull)' to 'public CheckedValueImp(T defaultValue, boolean allowsNull)'
+1145256870062	Change method 'public cps.jarch.data.value.RejectedValueException.RejectedValueException(Object value, Throwable cause, String reason)' to 'public RejectedValueException(Object value, Throwable cause, String reason)'
+1145242095328	Change method 'public cps.jarch.data.value.tools.RWValueImp.RWValueImp(T defaultValue, boolean allowsNull, ReadWriteLock lock)' to 'public RWValueImp(T defaultValue, boolean allowsNull, ReadWriteLock lock)'
+1145242078937	Change method 'public cps.jarch.data.value.tools.RWValueImp.RWValueImp(T defaultValue, boolean allowsNull)' to 'public RWValueImp(T defaultValue, boolean allowsNull)'
+1145242006218	Change method 'public cps.jarch.data.value.tools.CheckedValueImp.CheckedValueImp(T defaultValue, boolean allowsNull, ReadWriteLock lock)' to 'public CheckedValueImp(T defaultValue, boolean allowsNull, ReadWriteLock lock)'

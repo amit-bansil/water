@@ -1,0 +1,84 @@
+/*
+ * CREATED ON:    Apr 24, 2006 4:27:43 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import javax.media.opengl.Threading;
+
+import cps.water.simulation.SimModel;
+import cps.water.util.OffscreenCanvas;
+
+import java.awt.Image;
+
+/**
+ * <p>
+ * TODO document SnapshotRenderer
+ * </p>
+ * 
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class SnapshotDisplay {
+	public static interface RenderHook {
+		// note that his may be called by an arbitrary thread
+		public void finishedRendering(Image image);
+	}
+
+	private final OffscreenCanvas canvas;
+
+	private final Renderer renderer;
+
+	private final GLAccess gla;
+
+	public final void shutdown() {
+		canvas.removeNotify();
+	}
+
+	public final void renderSnapshot(final DisplayModel d, final SimModel m,
+			final RenderHook hook) {
+		//should be OK to ignore threading since the offscreencanvas runs in software
+		/*if (Threading.isSingleThreaded() && !Threading.isOpenGLThread()) {
+			Threading.invokeOnOpenGLThread(new Runnable() {
+				public void run() {
+					_renderSnapshot(d, m, hook);
+				}
+			});
+		} else*/ _renderSnapshot(d, m, hook);
+	}
+
+	private void _renderSnapshot(final DisplayModel d, final SimModel m,
+			final RenderHook hook) {
+		//if (!Threading.isOpenGLThread()) throw new Error("should not happen");
+
+		synchronized (renderer) {
+			renderer.readDisplayModel(d);
+			renderer.readSimModel(m);
+			canvas.display();
+			hook.finishedRendering(canvas.getOffscreenImage());
+		}
+	}
+
+	public final void setSize(int width, int height) {
+		synchronized (renderer) {
+			if (width < 1 || height < 1) throw new IllegalArgumentException();
+			canvas.setSize(width, height);
+		}
+	}
+
+	public final int getWidth() {
+		return canvas.getWidth();
+	}
+
+	public final int getHeight() {
+		return canvas.getHeight();
+	}
+
+	public SnapshotDisplay(int width, int height) {
+		canvas = new OffscreenCanvas();
+		renderer = new Renderer();
+		gla=new GLAccess();
+		canvas.addGLEventListener(renderer);
+		setSize(width, height);
+	}
+}

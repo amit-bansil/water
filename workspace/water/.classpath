@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/jdk1.5.0_06"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/jarch-simulation"/>
+	<classpathentry sourcepath="lib/jogl/jogl-src.zip" kind="lib" path="lib/jogl/jogl.jar">
+		<attributes>
+			<attribute value="http://download.java.net/media/jogl/builds/archive/jsr-231-beta3/javadoc_public/" name="javadoc_location"/>
+			<attribute value="water/lib/jogl" name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry sourcepath="lib/vecmath/vecmath-src.zip" kind="lib" path="lib/vecmath/vecmath.jar"/>
+	<classpathentry kind="output" path="bin~"/>
+</classpath>

@@ -1,0 +1,7 @@
+package cps.water.simulation;
+
+public final class ShakeFailException{
+	public ShakeFailException(){
+            super("Failed to recreate molecular structures probably due to extreme velocities");
+        }
+}

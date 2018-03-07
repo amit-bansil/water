@@ -1,0 +1,14 @@
+/*
+ * CREATED ON:    May 2, 2006 6:46:25 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+/**
+ * <p>TODO document GLWorker
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class GLWorker {
+
+}

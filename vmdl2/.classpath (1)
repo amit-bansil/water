@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/jdk1.5.0"/>
+	<classpathentry sourcepath="lib/jogl/src.zip" kind="lib" path="lib/jogl/jogl.jar"/>
+	<classpathentry sourcepath="lib/vecmath/src.zip" kind="lib" path="lib/vecmath/vecmath.jar"/>
+	<classpathentry kind="src" path="/CPSFramework"/>
+	<classpathentry kind="lib" path="lib/mcharts/mcharts.jar"/>
+	<classpathentry sourcepath="lib/kcolls/src.zip" kind="lib" path="lib/kcolls/kcolls.jar"/>
+	<classpathentry kind="output" path="test"/>
+</classpath>

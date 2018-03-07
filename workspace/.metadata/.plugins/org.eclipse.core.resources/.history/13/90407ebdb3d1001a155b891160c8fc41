@@ -1,0 +1,92 @@
+/*
+ * CREATED ON:    Apr 20, 2006 1:17:24 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water;
+
+import com.incors.plaf.alloy.AlloyCommonBorderFactory;
+import com.incors.plaf.alloy.AlloyCommonUtilities;
+
+import cps.jarch.data.value.ROValue;
+import cps.jarch.data.value.RWValue;
+import cps.jarch.data.value.tools.BoundedValue;
+import cps.jarch.data.value.tools.RWFlag;
+import cps.jarch.gui.builder.NumberEditorFactory;
+import cps.jarch.gui.data.BooleanBinder;
+import cps.jarch.gui.data.MiscBinder;
+
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.JSlider;
+import javax.swing.JSpinner;
+import javax.swing.JToggleButton;
+import javax.swing.border.Border;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.GridLayout;
+import java.awt.event.ActionListener;
+
+/**
+ * <p>TODO document ControlFactory
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+//TODO build icons right in here, add tooltips later
+public class ControlFactory {
+	public static final JToggleButton createVisibilityToggle(Component c,String name) {
+		RWValue<Boolean> visprop=new RWFlag(c.isVisible());
+		BooleanBinder.bindVisible(visprop, c);
+		return createToggleButton(visprop,name);
+	}
+	private static final Border toggleBorder=AlloyCommonBorderFactory.createAlternativeToolBarButtonBorder();
+	public static final JToggleButton createToggleButton(RWValue<Boolean> src,String name) {
+		JToggleButton ret=new JToggleButton(name);
+		BooleanBinder.bindToggleButton(src, ret);
+		ret.setBorder(toggleBorder);
+		return ret;
+	}
+	//private static final Border smallBorder=AlloyCommonBorderFactory.createSmallButtonBorder();
+	public static final JButton createToolbarButton(String name,ActionListener al) {
+		JButton ret=new JButton(name);
+		ret.addActionListener(al);
+		//ret.setBorder(smallBorder);
+		return ret;
+	}
+	//TODO hack these buttons together in photoshop so they look like itunes buttons
+	public static final JButton createImportantButton(String name,ActionListener al) {
+		JButton ret=createToolbarButton(name, al);
+		AlloyCommonUtilities.set3DBackground(ret, Color.WHITE);
+		return ret;
+	}
+	public static final JCheckBox createCheckBox(String title,RWValue<Boolean> target) {
+		JCheckBox ret=new JCheckBox(title);
+		BooleanBinder.bindCheckBox(target,ret);
+		return ret;
+	}
+	public static final JSpinner createFloatSpinner(float step,BoundedValue<Float> source) {
+		return NumberEditorFactory.createFloatSpinner(step, source);
+	}
+	public static final JSlider createFloatSlider(JSpinner s,float minStep) {
+		return NumberEditorFactory.createLightSlider(s, minStep);
+	}
+	public static final <T extends Enum> JComboBox createEnumCombo(RWValue<T> src,T[] values) {
+		JComboBox ret=new JComboBox(values);
+		MiscBinder.bindComboBox(src, ret, values);
+		return ret;
+	}
+	
+	public static final void bindEnabled(ROValue<Boolean> source,JComponent target) {
+		BooleanBinder.bindControlEnabled(source, target);
+	}
+	public static final JComponent stickTogether(JComponent a,JComponent b) {
+		JComponent result=new JPanel(new GridLayout(1,2,4,0));
+		result.add(a);
+		result.add(b);
+		return result;
+	}
+}

@@ -1,0 +1,14 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:05:35 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+/**
+ * <p>TODO document Display
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class DisplayPanel {
+
+}

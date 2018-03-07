@@ -1,0 +1,48 @@
+/*
+ * CREATED ON:    Apr 15, 2006 5:45:32 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.jarch.simulation.snapshot;
+
+import cps.jarch.simulation.components.AspectLayout;
+
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.ScrollPaneConstants;
+
+import java.awt.GridLayout;
+
+
+/**
+ * <p>TODO document SnapshotChooser
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class SnapshotChooser {
+	private final JComponent panel;
+	private final AspectLayout layout;
+	//we put titles and shots on separate grids so that the layout
+	//can correctly manage the aspect ratio of shots
+	private final JComponent titles;
+	private final GridLayout titlesGrid;
+	private final JComponent shots;
+	private final GridLayout shotsGird;
+	
+	public SnapshotChooser(SnapshotsModel model) {
+		layout=new AspectLayout();
+		JPanel content=new JPanel(layout);
+		panel=new JScrollPane(content,ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED,
+			ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+		titlesGrid=new GridLayout();
+		titles=new JPanel(titlesGrid);
+		shotsGrid=new GridLayout();
+		shots=new JPanel(shotsGrid);
+	}
+
+	public JComponent getComponent() {
+		return panel;
+	}
+
+}

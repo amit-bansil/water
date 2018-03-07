@@ -1,0 +1,43 @@
+/*
+ * CREATED ON:    Apr 24, 2006 4:27:43 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import cps.jarch.util.notes.ThreadSafe;
+import cps.water.moleculedisplay.DisplayPanel.RenderHook;
+import cps.water.simulation.SimModel;
+import cps.water.util.OffscreenCanvas;
+
+import java.awt.Image;
+
+/**
+ * <p>TODO document SnapshotRenderer
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class SnapshotDisplay {
+	public static interface RenderHook{
+		public void finishedRendering(Image image);
+	}
+	
+	private final OffscreenCanvas canvas;
+	
+	 public final void renderSnapshot(DisplayModel d,SimModel m,RenderHook hook) {
+	}
+	public final void setSize(int width,int height) {
+		canvas.setSize(width, height);
+	}
+	public final int getWidth() { 
+		return canvas.getWidth();
+	}
+	public final int getHeight() { 
+		return canvas.getHeight();
+	}
+	public SnapshotDisplay(int width,int height) {
+		OffscreenCanvas canvas=new OffscreenCanvas();
+		setSize(width,height);
+	}
+	
+}

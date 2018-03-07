@@ -1,0 +1,260 @@
+/*
+ * WorkspaceMenu.java
+ * CREATED:    Mar 13, 2005 10:56:21 PM
+ * AUTHOR:     Amit Bansil
+ * PROJECT:    CELEST-Framework-gui
+ * 
+ * Copyright 2005 The Center for Polymer Studies,
+ * Boston University, all rights reserved.
+ * */
+package cps.jarch.gui.builder;
+
+import cps.jarch.data.event.Unlinker;
+import cps.jarch.data.value.RWValue;
+import cps.jarch.gui.data.BooleanBinder;
+import cps.jarch.gui.resources.Described;
+import cps.jarch.gui.resources.DescribedImpl;
+import cps.jarch.gui.resources.ResourceAccessor;
+import cps.jarch.gui.components.CELESTLook;
+
+import javax.swing.JButton;
+import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JComponent;
+import javax.swing.JMenu;
+import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
+import javax.swing.KeyStroke;
+import javax.swing.SwingConstants;
+
+import java.awt.Component;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
+/**
+ * @author Amit Bansil
+ */
+public abstract class WorkspaceMenu<ComponentType extends Component>{
+	// ------------------------------------------------------------------------
+	// CONSTRUCTOR
+	// ------------------------------------------------------------------------
+
+	protected WorkspaceMenu(ResourceAccessor res) {
+		this.res=res;
+	}
+	public static final WorkspaceMenu<JMenu> createTopMenu(ResourceAccessor res,String name) {
+		res=res.getChild(name);
+		WorkspaceMenu<JMenu> ret=createMenu(res);
+		ret.getComponent().setText(res.loadString(Described.TITLE_KEY_POSTFIX));
+		return ret;
+	}
+	private static final WorkspaceMenu<JMenu> createMenu(ResourceAccessor res) {
+		final JMenu menu=new JMenu();
+		return new WorkspaceMenu<JMenu>(res) {
+			@Override public void addSeparator() {
+				menu.addSeparator();
+			}
+
+			@Override public JMenu getComponent() {
+				return menu;
+			}
+
+			@Override protected void add(JComponent c) {
+				menu.add(c);
+			}
+
+			@Override protected void remove(JComponent c) {
+				menu.remove(c);
+			}
+		};
+	}
+	
+	// ------------------------------------------------------------------------
+	
+	public abstract void addSeparator();
+	public abstract ComponentType getComponent();
+	protected abstract void add(JComponent c);
+	protected abstract void remove(JComponent c);
+	
+	// ------------------------------------------------------------------------
+	// add
+	// ------------------------------------------------------------------------
+	
+	//NOTE: no icons on purpose
+	public final Unlinker addAction(final CELESTAction action) {
+		final JMenuItem item=new JMenuItem();
+		
+		final Unlinker enabledBinding=BooleanBinder.bindControlEnabled(action.enabled(),item);
+		final ActionListener actionListener=new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				action.doAction();
+			}
+		};
+		item.addActionListener(actionListener);
+		addMenuItem(item,res.getChild(action.getName()));
+		
+		return new Unlinker(){
+			public void unlink() {
+				enabledBinding.unlink();
+				item.removeActionListener(actionListener);
+				remove(item);
+			}
+		};
+	}
+	
+	//NOTE submenu's can't be unbound
+	public final WorkspaceMenu<JMenu> addSubMenu(String name) {
+		ResourceAccessor lres =this.res.getChild(name);
+		WorkspaceMenu<JMenu> ret=createMenu(lres);
+		addMenuItem(ret.getComponent(),lres);
+		return ret;
+	}
+	public final Unlinker addCheckBox(String name,RWValue<Boolean> property) {
+		return addCheckBox(name,property,null);
+	}
+	public final Unlinker addCheckBox(String name,RWValue<Boolean> property,RWValue<Boolean> enabled) {
+		final JCheckBoxMenuItem item=new JCheckBoxMenuItem();
+		
+		final Unlinker selectedBinding=BooleanBinder.bindCheckBox(property, item);
+		final Unlinker enabledBinding=enabled!=null?BooleanBinder.bindControlEnabled(enabled,item):null;
+		addMenuItem(item,res.getChild(name));
+		
+		return new Unlinker(){
+			public void unlink() {
+				if(enabledBinding!=null)enabledBinding.unlink();
+				selectedBinding.unlink();
+				remove(item);
+			}
+		};
+	}
+	// ------------------------------------------------------------------------
+	//Resource Access
+	// ------------------------------------------------------------------------
+	private final ResourceAccessor res;
+	
+	private final void addMenuItem(JMenuItem item, ResourceAccessor lres) {
+		String title = lres.loadString(Described.TITLE_KEY_POSTFIX);
+
+		item.setText(title);
+
+		String accelText = lres.tryLoadString(ACCELERATOR_KEY);
+		try {
+			if (accelText != null) {
+				item.setAccelerator(parseKeystroke(accelText));
+			}
+		} catch (Throwable t) {
+			lres.warnValueCorrupt(ACCELERATOR_KEY, "parseKeystroke failed",
+				accelText, t);
+		}
+
+		String mnemCode = lres.tryLoadString(MNEMONIC_KEY);
+		if (mnemCode != null) {
+			try {
+				item.setMnemonic(parseMnemonic(mnemCode));
+			} catch (Throwable t) {
+				lres.warnValueCorrupt(MNEMONIC_KEY, "parseMnemonic failed",
+					mnemCode, t);
+			}
+		}
+		String mnemIndex = lres.tryLoadString(MNEMONIC_INDEX_KEY);
+		try {
+			if (mnemIndex != null) {
+
+				int mnemIndexInt = Integer.parseInt(mnemIndex);
+				item.setDisplayedMnemonicIndex(mnemIndexInt);
+				if (mnemIndexInt < 0 || mnemIndexInt > title.length())
+					throw new IllegalArgumentException(
+						"mneomic index out of bounds [o,title.length()]");
+			}
+
+		} catch (Throwable t) {
+			lres.warnValueCorrupt(MNEMONIC_INDEX_KEY,
+				"could not get MNEMONIC_INDEX_KEY",mnemIndex, t);
+		}
+		add(item);
+	}
+	
+	// keys
+	private static final String MNEMONIC_KEY = "mnem";
+
+	private static final String MNEMONIC_INDEX_KEY = "mnemIndex";
+
+	private static final String ACCELERATOR_KEY = "accel";
+	
+	// read accelerator
+	private static final String CMD = "CMD";
+
+	private final int mod = Toolkit.getDefaultToolkit()
+			.getMenuShortcutKeyMask();
+
+	private KeyStroke parseKeystroke(String text){
+		if (text.startsWith(CMD)) {
+			text = text.substring(CMD.length()).trim();
+			KeyStroke i = KeyStroke.getKeyStroke(text);
+			return KeyStroke.getKeyStroke(i.getKeyCode(), i.getModifiers()
+					| mod);
+		} else {
+			return KeyStroke.getKeyStroke(text);
+		}
+	}
+
+	// read mneomic
+	private static Integer parseMnemonic(String text) throws Exception {
+		try {
+			return (Integer) KeyEvent.class
+					.getField("VK_" + text.toUpperCase()).get(null);
+		} catch (IllegalAccessException e) {
+			throw new UnknownError();
+		} catch (NoSuchFieldException e) {
+			throw new Exception("expected KeyEvent VK code, instead:" + text, e);
+		}
+	}
+	// ------------------------------------------------------------------------
+	//popup stub
+	// ------------------------------------------------------------------------
+	
+	//TODO nothing should be selected initially
+	public static WorkspaceMenu<Component> createPopupStub(
+			ResourceAccessor res,String name) {
+		//final ResourceAccessor res = parentRes.getChild(name);
+
+		final JPopupMenu menu = new JPopupMenu();
+		Described desc=new DescribedImpl(res,name);
+		final JButton button = new JButton(desc.getTitle(),
+				CELESTLook.getInstance().getIcon(CELESTLook.IconType.OPEN_HANDLE));
+		button.setToolTipText(desc.getDescription());
+		button.setHorizontalTextPosition(SwingConstants.LEFT);
+		// TODO some sort of rollover effect
+		button.addMouseListener(new MouseAdapter() {
+			@Override public void mousePressed(MouseEvent e) {
+				// TODO test menu.isPopupTrigger(), overload UI
+				menu.show(button, 0, button.getHeight());
+			}
+		});
+		button.setFocusable(false);
+		CELESTLook.getInstance().makeToolbarStyle(button);
+		return new WorkspaceMenu<Component>(res.getChild(name)) {
+
+			@Override public void addSeparator() {
+				menu.addSeparator();
+			}
+
+			@Override public Component getComponent() {
+				return button;
+			}
+
+			@Override protected void add(JComponent c) {
+				menu.add(c);
+			}
+
+			@Override protected void remove(JComponent c) {
+				menu.remove(c);
+			}
+
+		};
+	}
+
+}

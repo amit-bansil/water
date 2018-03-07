@@ -1,0 +1,14 @@
+/*
+ * CREATED ON:    Apr 15, 2006 8:51:54 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.simulation;
+/**
+ * <p>TODO document IonPair
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class IonPair {
+
+}

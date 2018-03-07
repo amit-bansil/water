@@ -1,0 +1,49 @@
+/*
+ * CREATED:    Jul 24, 2004
+ * AUTHOR:     Amit Bansil
+ * 
+ * Copyright 2004 The Center for Polymer Studies,
+ * Boston University, all rights reserved.
+ * */
+package cps.jarch.data.event;
+
+import java.util.EventObject;
+
+/**
+ * An object that can be observed by registering
+ * {@link cps.jarch.data.event.GenericLink}s with it. It sends events &
+ * accepts links of type <code>EventType</code>. Most <code>Source</code>
+ * implementations delegate this behavior to a
+ * {@link cps.jarch.data.event.Publisher} or other <code>Source</code>.<br>
+ * 
+ * <code>Link</code> querying is intentionally not supported to discourage any
+ * access to <code>Link</code>s through this object. <br>
+ * 
+ * it is essential that clients call <code>disconnect</code> after calling
+ * <code>connect</code> if they wish to be garbage collected before the
+ * <code>Source</code> they registered with, otherwise a sort of memory leak
+ * may occur. The {@link cps.jarch.data.event.Unlinker} object factors out
+ * this behavior.<br>
+ * @version $Id$
+ */
+public interface Source<EventType extends EventObject> {
+	/**
+	 * connect <code>l</code> to this so that future events from this
+	 * <code>Source</code> will be sent to it.
+	 * 
+	 * @throws Error
+	 *             (not exception) possibly, but not always, if <code>l</code> is already
+	 *             connected to this, for error checking.
+	 */
+	public void connect(GenericLink<? super EventType> l);
+
+	/**
+	 * disconnect <code>l</code> from this.
+	 * 
+	 * @throws Error
+	 *             (not exception) possibly, but not always, if <code>l</code>
+	 *             is not connected to this, for error checking.
+	 */
+	public void disconnect(GenericLink<? super EventType> l);
+
+}

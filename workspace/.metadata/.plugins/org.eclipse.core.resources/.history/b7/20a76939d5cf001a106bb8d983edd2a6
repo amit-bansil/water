@@ -1,0 +1,141 @@
+/*
+ * CREATED ON:    Apr 16, 2006 3:46:34 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import cps.jarch.util.collections.ArrayFinal;
+import cps.jarch.util.notes.Constant;
+import cps.jarch.util.notes.Immutable;
+
+import javax.media.opengl.GL;
+import javax.media.opengl.glu.GLU;
+
+import java.awt.Color;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
+
+/**
+ * <p>Draws a Scenegraph.
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public abstract class Renderer {
+
+	private final ReentrantLock lock;
+	public final @Constant Lock getLock() {
+		return lock;
+	}
+	private final void checkLocked() {
+		if (!lock.isHeldByCurrentThread())
+			throw new IllegalThreadStateException(
+				"should be locked before read/write access");
+	}
+	// ------------------------------------------------------------------------
+	//data
+	public static @Immutable class DataType{
+		private final float radius;
+		public @Constant final float getRadius() {
+			return radius;
+		}
+		private final int faces;
+		public @Constant final int getFaces() {
+			return faces;
+		}
+		private final Color color;
+		public @Constant Color getColor() {
+			return color;
+		}
+		private final boolean useTypeColor;
+		public final boolean useTypeColor() {
+			return useTypeColor;
+		}
+		public DataType(final float radius, final int faces, final Color color,
+				final boolean useTypeColor) {
+			super();
+			this.radius = radius;
+			this.faces = faces;
+			this.color = color;
+			this.useTypeColor = useTypeColor;
+		}
+	}
+	
+	public static final class Data<Type extends DataType>{
+		private int count;
+		public int getCount() {
+			return count;
+		}
+		private int[] typeIndexes;
+		public int getTypeIndex(int index) {
+			return typeIndexes[index];
+		}
+		public void getTypeIndexes(int[] target,int dstStartIndex,int srcStartIndex,int count) {
+			System.arraycopy(typeIndexes, srcStartIndex, target, dstStartIndex, count);
+		}
+		public void setTypeIndexes(int startIndex,int count,int dstStartIndex,int[] target) {
+			
+		}
+		
+		private float[] colors;
+		public void getColors(int startIndex,int count,int srcStartIndex,float[] target) {
+			
+		}
+		public void getColor(int index,float[] target) {
+			
+		}
+		public void setColors(int startIndex,int count,int srcStartIndex,float[] src) {
+			
+		}
+		private ArrayFinal<Type> types;
+		public void setTypes(ArrayFinal<Type> types) {
+			
+		}
+		public ArrayFinal<Type> getTypes(){
+			return types;
+		}
+
+	}
+	// ------------------------------------------------------------------------
+	//atoms
+	private Atoms atoms;
+	public static final class Atoms extends Data<AtomDataType>{
+
+		private float[] positions;
+		
+		public void getPositions(int startIndex,int endIndex,float[] target) {
+			
+		}
+		public void getPosition(int index,float[] target) {
+			
+		}
+		public void setPositions(int startIndex,int endIndex,int count,int srcStartIndex,float[] src) {
+			
+		}
+	}
+	
+	// ------------------------------------------------------------------------
+	// bonds
+
+	public static final class Bonds{
+	}
+	// ------------------------------------------------------------------------
+	/// view
+	
+	//----------------------------------------------------------
+	// box
+	
+	
+	// ------------------------------------------------------------------------
+	// rendering
+	public void init(GL gl,GLU glu) {
+		
+	}
+	public void render(GL gl, GLU glu) {
+		
+	}
+	public void clear() {
+		
+	}
+}

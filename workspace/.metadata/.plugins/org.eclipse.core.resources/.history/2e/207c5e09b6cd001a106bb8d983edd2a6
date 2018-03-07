@@ -1,0 +1,321 @@
+/*
+ * CREATED ON:    Apr 15, 2006 10:06:43 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.simulation.internal;
+
+import cps.jarch.util.collections.ArrayFinal;
+
+/**
+ * <p>TODO document PELandscapeCalculator
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+class PELandscapeCalculator {
+	private final int latRes;
+	private final double CUTOFF;
+	private final int[] pematrix;
+	
+	public PELandscapeCalculator(int latRes,double CUTOFF) {
+		pematrix=new int[(latRes+1)*(latRes+1)];
+		this.latRes = latRes/2;
+		this.CUTOFF = CUTOFF / 1000d;
+	}
+	public int[] getLandscape() {
+		return pematrix;
+	}
+	
+	//engine state
+	private double boxhx,boxhy,boxhz,bx,by,bz;
+	private float[][][] rn;
+	private int mols;
+	private double[] q;
+	
+	public void readEngineState(Engine e) {
+		boxhx=e.boxhx;
+		boxhx=e.boxhy;
+		boxhx=e.boxhz;
+		boxhx=e.bx;
+		boxhx=e.by;
+		boxhx=e.bz;
+		rn=e.rn;
+		mols=e.mols;
+		
+		q=e.q;
+	}
+	public void generatePELandscape(ArrayFinal<Ion> ions,
+			float xPosition) {
+		//check arg
+		if(ions.getLength()!=1&&ions.getLength()!=2)
+			throw new IllegalArgumentException("expected 1 or 2 ions");
+		
+		double[] xion=new double[2],yion=new double[2],zion=new double[2];
+		double[] ttswit=new double[2],ttswp=new double[2];
+		
+		int i, j;
+
+		int iax, iay, iaz, x, y, z, h;
+		double shltap, ft2mi3;
+		double qqhyio, qqoxio, qion[] = new double[2];
+		double alj6p, blj12p, xnjo, ynjo, znjo;
+		double xx, yy, zz;
+		double abx, aby, abz, xnlinew, ynlinew, znlinew;
+		double r, rinv, difft, diffr;
+		double tswit, tswp;
+		double xo, yo, zo, r2inv, r4inv, r6inv;
+		double ecoul, ecore, epoli;
+		double es;
+		double sigg, epsn, siggi;
+		double latx, laty, latz;
+		double xnl, xnli[] = new double[2], ynli[] = new double[2], znli[] = new double[2];
+		double potlwi;
+
+		shltap = 0.005; /* orig.-value : 0.005 */
+		double frang = 1.0d * this.boxhx;
+		double frangt = frang - shltap;
+		double ft2mi = 2.0d / ((frang - frangt) * (frang - frangt));
+		double ft3m = 0.5d * (3.0d * frang - frangt);
+		ft2mi3 = (-3.0) * ft2mi;
+		es = 1.6022e-19 / 1.0e-20;
+
+		latx = this.bx / (2 * latRes + 1);
+		laty = this.by / (2 * latRes + 1);
+		latz = this.bz / (2 * latRes + 1);
+
+		// h=(3*latRes)-1;
+		for (h = 0; h <= 3 * latRes; h++) {
+			// h=(3*latRes)-1;
+			int xmax = h;
+			int xmin = -h;
+			if (xmax > latRes) xmax = latRes;
+			if (xmin < -latRes) xmin = -latRes;
+			for (x = xmin; x <= xmax; x++) {
+				// x=(int)Math.round((xPosition*this.bx)/latx);
+				// System.out.println(x);
+				if (x == Math.round(((xPosition) * (latRes * 2)) - latRes)) {// """""""""""""""""
+					// System.out.println("CORRECT X!"+x);
+					int ymax = h - Math.abs(x);
+					int ymin = -h + Math.abs(x);
+					if (ymax > latRes) ymax = latRes;
+					if (ymin < -latRes) ymin = -latRes;
+					xnl = x * latx;
+					if (ions.getLength() == 1) xnli[0] = xnl;
+					else if (ions.getLength() == 2) {
+						siggi = (ions.get(0).sig + ions.get(1).sig) / 2.0;
+						/*
+						 * this can also be added to y- and z-component, if
+						 * lattice changes
+						 */
+						xnli[0] = xnl + ((siggi / 2.0) - 0.01); /*
+																 * due to
+																 * coulomb
+																 * attraction
+																 */
+						xnli[1] = xnl - ((siggi / 2.0) - 0.01); /*
+																 * subtract 0.01
+																 * nm for dist
+																 */
+						/*
+						 * apply periodic boundary conditions . otherwise it
+						 * won't work!!!
+						 */
+						xnli[0] = xnli[0] - 2.0 * this.boxhx
+								* ((int) (xnli[0] / this.boxhx));
+						xnli[1] = xnli[1] - 2.0 * this.boxhx
+								* ((int) (xnli[1] / this.boxhx));
+					}
+
+					for (y = ymin; y <= ymax; y++) {
+						int zmax = h - Math.abs(x) - Math.abs(y);
+						int zmin = -h + Math.abs(x) + Math.abs(y);
+						int zstep = zmax - zmin;
+						if (!Engine.numToBool(zstep)) zstep = 1;
+						if ((zmax <= latRes)) // System.out.println("???");
+							for (z = zmin; z <= zmax; z += zstep) {
+								potlwi = 0;
+								for (i = 0; i < ions.getLength(); i++) {
+									qion[i] = ions.get(i).solch * es;
+									qqhyio = qion[i] * this.q[1] * Engine.scfacq;
+									qqoxio = qion[i] * this.q[2] * Engine.scfacq;
+
+									/* mix potentials */
+
+									epsn = Math.sqrt(ions.get(i).eps * Engine.epsilon);
+									sigg = (ions.get(i).sig + Engine.sigma) / 2.0;
+
+									alj6p = -4.0 * epsn * Math.pow((sigg), 6.0);
+									blj12p = 4.0 * epsn * Math.pow((sigg), 12.0);
+									znli[i] = latz * z;
+									ynli[i] = laty * y;
+
+									double couwi=0,corwi=0,polwi=0;
+									
+									for (j = 0; j < this.mols; j++) {
+										xnjo = this.rn[j][0][2];
+										ynjo = this.rn[j][1][2];
+										znjo = this.rn[j][2][2];
+
+										xx = (xnli[i] - xnjo) / this.boxhx;
+										yy = (ynli[i] - ynjo) / this.boxhy;
+										zz = (znli[i] - znjo) / this.boxhz;
+
+										iax = ((int) (xx)) + ((int) (xx));
+										iay = ((int) (yy)) + ((int) (yy));
+										iaz = ((int) (zz)) + ((int) (zz));
+
+										abx = ((iax)) * (this.boxhx);
+										aby = ((iay)) * (this.boxhy);
+										abz = ((iaz)) * (this.boxhz);
+
+										xnlinew = xnli[i] - abx;
+										ynlinew = ynli[i] - aby;
+										znlinew = znli[i] - abz;
+
+										xion[j] = xnlinew;
+										yion[j] = ynlinew;
+										zion[j] = znlinew;
+
+										xx = xnlinew - xnjo;
+										yy = ynlinew - ynjo;
+										zz = znlinew - znjo;
+
+										r = xx * xx + yy * yy + zz * zz;
+										if (r <= CUTOFF) {
+											r = Math.sqrt(r);
+											rinv = 1.0 / r;
+
+											difft = r - frangt;
+											diffr = r - frang;
+
+											tswit = 1.0 - difft * difft * (ft3m - r)
+													* ft2mi;
+											if (difft < 0.0) tswit = 1.0;
+											if (diffr > 0.0) tswit = 0.0;
+
+											ttswit[j] = tswit;
+											
+											tswp = difft * diffr * ft2mi3 * rinv;
+											if (difft < 0.0) tswp = 0.0;
+											if (diffr > 0.0) tswp = 0.0;
+											
+											ttswp[j] = tswp;
+										}
+									}
+
+									for (j = 0; j < this.mols; j++) {
+										xx = xion[j] - this.rn[j][0][0];
+										yy = yion[j] - this.rn[j][1][0];
+										zz = zion[j] - this.rn[j][2][0];
+
+										r = xx * xx + yy * yy + zz * zz;
+										if (r <= CUTOFF) {
+											r = Math.sqrt(r);
+
+											rinv = 1.0 / r;
+											r2inv = rinv * rinv;
+
+											ecoul = qqhyio * rinv;
+											tswit = ttswit[j];
+											couwi = couwi + ecoul * tswit;
+										}
+									}
+									for (j = 0; j < this.mols; j++) {
+										xx = xion[j] - this.rn[j][0][1];
+										yy = yion[j] - this.rn[j][1][1];
+										zz = zion[j] - this.rn[j][2][1];
+
+										r = xx * xx + yy * yy + zz * zz;
+										if (r <= CUTOFF) {
+											r = Math.sqrt(r);
+
+											rinv = 1.0 / r;
+											r2inv = rinv * rinv;
+
+											ecoul = qqhyio * rinv;
+											tswit = ttswit[j];
+											couwi = couwi + ecoul * tswit;
+										}
+									}
+
+									for (j = 0; j < this.mols; j++) {
+										xo = this.rn[j][0][2];
+										yo = this.rn[j][1][2];
+										zo = this.rn[j][2][2];
+
+										xx = xion[j] - xo;
+										yy = yion[j] - yo;
+										zz = zion[j] - zo;
+
+										r = xx * xx + yy * yy + zz * zz;
+										if (r <= CUTOFF) {
+											r = Math.sqrt(r);
+
+											rinv = 1.0 / r;
+											r2inv = rinv * rinv;
+
+											ecoul = qqoxio * rinv;
+											tswit = ttswit[j];
+											couwi = couwi + ecoul * tswit;
+
+											r4inv = r2inv * r2inv;
+											r6inv = r4inv * r2inv;
+
+											ecore = r6inv * r6inv * blj12p;
+											corwi = corwi + ecore * tswit;
+											epoli = r6inv * alj6p;
+											polwi = polwi + epoli * tswit;
+										}
+									}
+									potlwi += (couwi + corwi + polwi);
+								}
+								// System.out.println(potlwi+"~"+xnli[0]+","+ynli[0]+","+znli[0]+"!");
+								// System.out.println("x/y/z/pe:"+x+","+z+","+y+","+(int)potlwi);
+								int zPosition = (y + (latRes));
+								int yPosition = (((latRes * 2)) - (z + (latRes)));
+								if (yPosition > (latRes * 2) || yPosition < 0) {
+									// do nothing
+								} else if (zPosition > (latRes * 2) || zPosition < 0) {
+									// do nothing
+								} else {
+
+									/*
+									 * if(potlwi <= POT_CUTOFF){ float
+									 * color=(float)((potlwi+1000d)/1000d);
+									 * if(color<0){ color=0; } else
+									 * if(color>1){ color=1; } java.awt.Color
+									 * temp=new
+									 * java.awt.Color(color,color,color);
+									 * pematrix[(yPosition*(latRes*2))+zPosition]=temp.getRGB();
+									 * }else{
+									 */
+									if (highPotWI < potlwi) highPotWI = potlwi;
+									if (lowPotWI > potlwi) lowPotWI = potlwi;
+									float color = (float) ((potlwi + 50000d) / 1500000d);
+									if (color < 0f) {
+										color = 0f;
+									} else if (color > .8f) {
+										color = .8f;
+									}
+									pematrix[(yPosition * (latRes * 2)) + zPosition] = (java.awt.Color
+										.HSBtoRGB(color, 1f, 1f));// temp.getRGB();
+
+								}
+							}
+					}
+					/**/}
+			}
+		}
+	}
+	private double highPotWI=0,lowPotWI=0;
+	public final double getHighPotWI() {
+		return highPotWI;
+	}
+	public final double getLowPotWI() {
+		return lowPotWI;
+	}
+	public final void resetPotWIRange() {
+		highPotWI = 0;
+		lowPotWI = 0;
+	}
+}

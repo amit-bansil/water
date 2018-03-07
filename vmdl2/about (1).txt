@@ -1,0 +1,47 @@
+VMDL2
+8-18-04
+Amit Bansil
+
+This software combines bcp, a discrete molecular dynamics
+simulation with a java swing interface jogl 3d render.
+
+Build Requirements
+
+Metroworks CodeWarrior 7 (BCP)
+Eclipse 3.1 (Java)
+JDK1.5 (Java)
+CPSFramework 
+
+Directories
+
+run.bat					runs using default vm (which must be >=1.5)
+run\java				java classes&resources out dir
+run\					shared libraries output&program run dir
+run\configurations\		UMD configurations
+bcp,bcp\bcp_data\		metworks codewarrior project files for BCP
+bcp\configs				original bcp text configurations
+src						java source code
+lib						java libraries
+.project,.classpath		eclipse project files
+.settings				eclipse settings files
+
+BCP Package Structure
+
+This is messy and needs to be redesigned. It should be:
+
+BCP Engine				internal md engine for BCP
+BCP Interface			API to access BCP which insulates JNI&Command Line from internals
+Command Line Interface	Set of commandline tools to run BCP Interface from commandline
+JNI Interface			glue java & BCP interface together
+
+Java Package Structure:
+
+PatricleRenderer	Renders Particles
+
+MDSimulation		Wrapper around BCP
+
+Plot				MonarchChart based plotting & other data display features
+
+Application			Saves&loads everything
+					Wires above packages together into CPSFramework
+					Provides a gui for Plot,MDSimulation,&ParticleRenderer

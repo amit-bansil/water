@@ -1,0 +1,60 @@
+/*
+ * CREATED ON:    Apr 16, 2006 3:46:34 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import com.sun.j3d.utils.universe.SimpleUniverse;
+
+import cps.jarch.util.notes.Nullable;
+
+import javax.media.j3d.Canvas3D;
+
+/**
+ * <p>Draws a Scenegraph.
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public abstract class Renderer {
+	//	 ------------------------------------------------------------------------
+	private SceneGraph graph;
+	public void setSceneGraph(@Nullable SceneGraph g) {
+		if(graph!=null&&g!=null)universe.getLocale().replaceBranchGraph(oldGroup, newGroup)
+        universe.addBranchGraph(g.getRoot());
+        graph=g;
+        
+        rebuild();
+	}
+	public @Nullable SceneGraph getSceneGraph() {
+		
+	}
+	//called by controller to cause rendering of current SceneGraph
+    public void render() {
+    	universe.getViewingPlatform().getViewPlatformTransform()
+    		.setTransform(graph.getViewTransform());
+		if (aaEnabled != graph.isAAEnabled())
+			universe.getViewer().getView().setSceneAntialiasingEnable(
+				aaEnabled = graph.isAAEnabled());
+    }
+    boolean aaEnabled;
+	// ------------------------------------------------------------------------
+    private Canvas3D canvas;
+    private SimpleUniverse universe;
+    
+    private Renderer(boolean isOffscreen) {
+        canvas=new Canvas3D(SimpleUniverse.getPreferredConfiguration(),isOffscreen);
+        universe = new SimpleUniverse(canvas);
+        aaEnabled=universe.getViewer().getView().getSceneAntialiasingEnable();
+    }
+    public static final class OffScreen extends Renderer{
+    	public OffScreen() {
+    		super(true);
+    	}
+    }
+    public static final class OnScreen extends Renderer{ 
+    	public OnScreen() {
+    		super(false);
+    	}
+    }
+}

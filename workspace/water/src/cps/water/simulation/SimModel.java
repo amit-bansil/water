@@ -1,0 +1,146 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:08:41 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.simulation;
+
+import cps.jarch.util.misc.Worker;
+
+import java.util.concurrent.locks.ReentrantLock;
+
+
+/**
+ * <p>TODO document SimModel
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class SimModel {
+	private final Engine raw=new Engine();
+	private final ReentrantLock lock=new ReentrantLock();
+	// ------------------------------------------------------------------------
+
+	private final SimScene scene=new SimScene(raw);
+
+	private final InputParameters inputParameters=new InputParameters(lock);
+
+	private final Output output=new Output(lock);
+
+	//accessible from any thread
+	public final InputParameters getInputParameters() {
+		return inputParameters;
+	}
+	//accessible from any thread
+	public final Output.Options getOutputOptions() {
+		return output.options;
+	}
+	//accessible from worker only
+	public final Output.Recordings getOutputRecordings() {
+		return output.recordings;
+	}
+	//accessible from worker only
+	public final SimScene getScene() {
+		//TODO restore this check,it was relaxed so the snapshot mechansim would work
+		//worker.checkWorkerRunning();
+		return scene;
+	}
+	
+	// ------------------------------------------------------------------------
+	//time
+	private int frameNumber;
+	//accessible from any thread
+	public final int getFrameNumber() {
+		return frameNumber;
+	}
+
+	// ------------------------------------------------------------------------
+	private final Worker worker;
+
+	public SimModel(SimConfig initialConfig,Worker worker) {
+		this.initialConfig = initialConfig;
+		this.worker=worker;
+		//ok on any thread since we're not live yet
+		_clear();
+
+		//TODO this is a hack to get bonds calculated
+		try {
+			raw.step();
+		} catch (ShakeFailException e) {
+			e.printStackTrace();
+		}
+	}
+
+	//copy contructor
+	public SimModel(SimModel orig) {
+		SimConfig tempConfig=new SimConfig();
+		tempConfig.fromData(orig.raw);
+		initialConfig=tempConfig;
+		_clear();
+		//TODO this is a hack to get bonds calculated
+		try {
+			raw.step();
+		} catch (ShakeFailException e) {
+			e.printStackTrace();
+		}
+		
+		this.worker=orig.worker;
+		frameNumber=orig.frameNumber;
+		inputParameters.read(orig.inputParameters);
+		output.read(orig.output);
+	}
+
+	private SimConfig initialConfig;
+
+	//accessible from any thread
+	public void abortStep() {
+		abortStep=true;
+	}
+	private boolean abortStep=false;
+
+	//accessible from worker only
+	public void step(final int numFrames) throws ShakeFailException {
+		worker.checkWorkerRunning();
+		
+		abortStep=false;
+		lock.lock();
+		try {
+			output.preStep();
+			inputParameters.apply(raw);
+		} finally {
+			lock.unlock();
+		}
+		for (int i = 0; i < numFrames&&!abortStep; i++) {
+			raw.step();
+			frameNumber++;
+			output.step(raw);
+		}
+		output.postStep();
+	}
+	//accessible from worker only
+	public void clear() {
+		worker.checkWorkerRunning();
+		_clear();
+	}
+	private void _clear() {
+		raw.clear();
+		scene.removeIons();
+		initialConfig.toData(raw);
+		raw.initial();
+		raw.tempav = raw.atemp;
+		raw.presav = raw.apres;
+		raw.rho = raw.arho;
+		raw.hbonds = 0;
+		// ObjLib.boundsSize = getBoundsSize();
+		//if (initialConfig != null) initialConfig.toData(raw);
+		lock.lock();
+		try {
+			frameNumber=0;
+			//clearParameters
+			inputParameters.clear(raw);
+			output.clear();
+		}finally {
+			lock.unlock();
+		}
+	}
+
+}

@@ -1,0 +1,14 @@
+/*
+ * CREATED ON:    Apr 16, 2006 10:22:19 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water;
+/**
+ * <p>TODO document Model
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class Model {
+
+}

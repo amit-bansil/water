@@ -1,0 +1,109 @@
+/*
+ * MiscControlFactory.java
+ * CREATED:    Jun 19, 2005 10:59:25 PM
+ * AUTHOR:     Amit Bansil
+ * PROJECT:    celest-framework-gui
+ * 
+ * Copyright 2005 The Center for Polymer Studies,
+ * Boston University, all rights reserved.
+ * */
+package cps.jarch.gui.builder;
+
+import cps.jarch.data.value.RWValue;
+import cps.jarch.gui.components.CELESTLook;
+import cps.jarch.gui.data.MiscBinder;
+import cps.jarch.gui.resources.Described;
+import cps.jarch.gui.resources.DescribedProxy;
+import cps.jarch.gui.resources.MessageBundle;
+
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.Icon;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+//TODO combine with other factories?
+
+public class MiscControlFactory{
+
+    /**
+     * creates a label (potentially) with a tooltip
+     */
+    public static Localizable<JLabel> createLabel(String name) {
+        return new AbstractLocalizableComponent<JLabel>(name,new JLabel()) {
+			@Override
+			protected void setText(JLabel c, String title) {
+				c.setText(title);
+			}
+
+			@Override
+			protected void setEnabled(JLabel c, boolean b) {
+				c.setEnabled(b);
+			}
+		};
+    }
+
+    /**
+     * a label w/ strengthened text.
+     */
+    public static Localizable<JLabel> createTitle(String name) {
+    	Localizable<JLabel> ret=createLabel(name);
+        ret.getTarget().setFont(CELESTLook.getInstance().getTitleFont());
+        return ret;
+    }
+
+    /**
+	 * create a combobox that selects an element from an enum. <br>
+	 * the localized names of each element in choizes are used. NOTE the
+	 * localized names inteadof the actual elements of choices are added to the
+	 * combo. <br>
+	 * TODO show descriptions as tooltips when rollingover each item. <p/> T:
+	 * the EnumType to select from. MUST IMPLEMENT LOCALIZED.
+	 * 
+	 * @param choices
+	 *            is usually <code>T.values()</code>. It must match the
+	 *            ordering of elements in T <br>
+	 */
+	public static final <T extends Enum&DescribedProxy>JComboBox createCombo(T[] choices) {
+		String[] localizedChoices = new String[choices.length];
+		for (int i = 0; i < choices.length; i++)
+			localizedChoices[i] = ((DescribedProxy) choices[i]).getDescription().getTitle();
+
+		JComboBox ret = new JComboBox(localizedChoices);
+		if (choices.length > 0) ret.setSelectedIndex(0);
+		return ret;
+	}
+
+    public static <T extends Enum&DescribedProxy>JComboBox createCombo(RWValue<T> source,
+			T[] values) {
+		JComboBox ret = createCombo(values);
+		MiscBinder.bindComboBox(source, ret, values);
+		return ret;
+	}
+
+    /**
+	 * as above except names are loaded from resourceAccessor using key prefix.
+	 */
+    public static final <T extends Enum> Localizable<JComboBox> createCombo(
+            final String keyPrexfix,final T[] choices) {
+    	final JComboBox ret=new JComboBox();
+        return new Localizable<JComboBox>() {
+			public JComboBox getTarget() {
+				return ret;
+			}
+			public void localize(MessageBundle res) {
+				//OPTIMIZE custom lighter weight models?
+				ret.setModel(new DefaultComboBoxModel(res.loadStringArray(keyPrexfix,
+					choices, Described.TITLE_KEY_POSTFIX)));
+			}
+        	
+        };
+    }
+
+    // also binds
+	public static <T extends Enum>Localizable<JComboBox> createCombo(
+			RWValue<T> source, String keyPrefix, T[] values) {
+		Localizable<JComboBox> ret = createCombo(keyPrefix, values);
+		MiscBinder.bindComboBox(source, ret.getTarget(), values);
+		return ret;
+	}
+
+}

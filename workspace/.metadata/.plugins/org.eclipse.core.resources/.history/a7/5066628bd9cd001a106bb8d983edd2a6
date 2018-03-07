@@ -1,0 +1,51 @@
+/*
+ * CREATED ON:    Apr 16, 2006 10:41:52 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.jarch.data.collections;
+
+import ca.odell.glazedlists.EventList;
+import ca.odell.glazedlists.event.ListEventListener;
+
+import java.util.concurrent.locks.ReadWriteLock;
+
+import cps.jarch.data.event.Unlinker;
+import cps.jarch.data.value.CheckedValue;
+import cps.jarch.data.value.RejectedValueException;
+import cps.jarch.data.value.tools.CheckedValueImp;
+
+/**
+ * <p>
+ * A {@link CheckedValue} that can be set to an item from a list. Always
+ * nullable since if the is emptied the ListItem must be <code>null</code>.
+ * </p>
+ * 
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class ListItem<T> extends CheckedValueImp<T> implements Unlinker{
+	private final EventList<T> list;
+	private final ListEventListener<T> listListener;
+	
+	public ListItem(EventList<T> list, T initial, ReadWriteLock lock) {
+		super(true, lock);
+		this.list=list;
+		makeCurrentInitial();
+		listListener=new Even
+	}
+
+	public ListItem(EventList<T> list, T initial) {
+		this(list,initial,null);
+	}
+	public ListItem(EventList<T> list) {
+		this(list,null,null);
+	}
+
+	@Override protected void check(T newValue) throws RejectedValueException {
+	}
+
+	public void unlink() {
+		
+	}
+
+}

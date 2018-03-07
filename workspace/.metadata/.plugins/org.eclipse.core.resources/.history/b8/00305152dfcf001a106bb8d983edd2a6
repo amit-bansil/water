@@ -1,0 +1,24 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:08:41 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.simulation;
+
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+/**
+ * <p>TODO document SimModel
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class SimModel {
+	private final Lock lock=new ReentrantLock();
+	public final Lock getLock() {
+		return lock;
+	}
+	public SimModel(SimConfig intialConfig) {
+	}
+
+}

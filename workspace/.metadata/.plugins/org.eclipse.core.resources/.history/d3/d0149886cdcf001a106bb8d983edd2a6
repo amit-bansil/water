@@ -1,0 +1,56 @@
+/*
+ * CREATED ON:    Apr 16, 2006 3:46:34 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import com.sun.j3d.utils.universe.SimpleUniverse;
+
+import cps.jarch.util.collections.ArrayFinal;
+import cps.jarch.util.notes.Constant;
+import cps.jarch.util.notes.Immutable;
+import cps.jarch.util.notes.Nullable;
+import cps.water.moleculedisplay.Scene.Atoms;
+import cps.water.moleculedisplay.Scene.Data;
+import cps.water.moleculedisplay.Scene.DataType;
+
+import javax.media.j3d.Canvas3D;
+import javax.media.opengl.GL;
+import javax.media.opengl.glu.GLU;
+
+import java.awt.Color;
+import java.util.concurrent.locks.ReadWriteLock;
+
+/**
+ * <p>Draws a Scenegraph.
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public abstract class Renderer {
+
+	private final ReadWriteLock lock;
+	public final @Constant ReadWriteLock getLock() {
+		return lock;
+	}
+	// ------------------------------------------------------------------------
+	//data
+	public static @Immutable class DataType{
+		private final float radius;
+		public @Constant final float getRadius() {
+			return radius;
+		}
+		private final int faces;
+		public @Constant final int getFaces() {
+			return faces;
+		}
+		private final float r,g,b;
+		public @Constant Color getColor() {
+			
+		}
+		private final boolean useTypeColor;
+		public final boolean useTypeColor() {
+			return useTypeColor;
+		}
+	}
+}

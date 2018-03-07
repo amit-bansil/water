@@ -1,0 +1,45 @@
+default_title=Untitled Document
+
+file.title=File
+
+file.save.title=Save
+file.save.mnem=S
+file.save.accel=CMD S
+file.save.description=Save changes to the current document.
+
+file.saveAs.title=Save As
+file.saveAs.mnem=A
+file.saveAs.mnemIndex=5
+file.saveAs.description=Save the current document to a diffrent file.
+
+file.new.title=New
+file.new.mnem=N
+file.new.accel=CMD N
+file.new.description=Create a new blank document.
+
+file.open.title=Open
+file.open.mnem=O
+file.open.accel=CMD O
+file.open.description=Load a document from a file.
+
+file.revert.title=Reload
+file.revert.mnem=R
+file.revert.description=Discard changes and restore document to last saved state.
+
+file.exit.title=Exit
+file.exit.mnem=x
+
+error.save=Could not save data to the file '{file}'.
+error.load=Could not load data from the file '{file}'.
+
+revert.confirm.title=Confirm Revert Document
+revert.confirm.message=<html>Are you certain that you would like to restore<br> this document to its state when last saved?<br>All unsaved changes will be discarded.</html>
+
+close.confirm.title=Confirm Close Document
+close.confirm.message=<html>Would you like to save changes to<br>the current document before closing?</html>
+
+fileDialog.save.title=Save {type_name}
+fileDialog.open.title=Open {type_name}
+
+fileDialog.save.overwrite.title=Confirm Overwrite
+fileDialog.save.overwrite.message=<html>A file named '{file_name}' already exists.<br>Would you like to overwrite it?

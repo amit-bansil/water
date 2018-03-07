@@ -1,0 +1,14 @@
+/*
+ * CREATED ON:    Apr 19, 2006 2:39:13 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.util;
+/**
+ * <p>TODO document ArrayImp
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class ArrayImp {
+
+}

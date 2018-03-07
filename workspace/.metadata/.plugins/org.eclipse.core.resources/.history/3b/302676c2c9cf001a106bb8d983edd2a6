@@ -1,0 +1,30 @@
+/*
+ * CREATED ON:    Apr 16, 2006 10:31:50 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water;
+
+import java.awt.Image;
+
+import cps.jarch.simulation.snapshot.Snapshot;
+import cps.water.moleculedisplay.DisplayModel;
+import cps.water.simulation.SimConfig;
+import cps.water.simulation.SimModel;
+
+/**
+ * <p>TODO document Model
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class Model extends Snapshot {
+	private final SimModel simModel;
+	private final DisplayModel display;
+	@Override public Image getThumbnail(int width, int height) {
+		return null;
+	}
+	public Model(SimConfig intialConfig) {
+		simModel=new SimModel(intialConfig);
+		display=new DisplayModel();
+	}
+}

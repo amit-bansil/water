@@ -1,0 +1,61 @@
+/*
+ * CREATED ON:    Aug 23, 2005 5:39:42 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.jarch.data.value.tools;
+import java.util.concurrent.locks.ReadWriteLock;
+
+import cps.jarch.data.event.Link;
+import cps.jarch.data.io.SaveableData;
+import cps.jarch.data.io.SaveableDataProxy;
+import cps.jarch.data.value.RWValue;
+import cps.jarch.data.value.RejectedValueException;
+import cps.jarch.data.value.ValueChange;
+import cps.jarch.util.notes.Nullable;
+
+/**
+ * TODO document RWFlag<br>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+//all this is an trivial impl. of RWValue<Boolean> using RWValyeImp,
+//but that's ok cuz we need to extend ROFlag
+public class RWFlag extends ROFlag implements SaveableDataProxy,RWValue<Boolean>{
+	private final RWValueImp<Boolean> rwvs;
+	
+	public RWFlag(boolean v) {
+		this(v,null);
+	}
+	public RWFlag(boolean v,@Nullable ReadWriteLock lock) {
+		rwvs=new RWValueImp<Boolean>(false,v,lock);
+	}
+	
+	//io code removed
+	public SaveableData getData() {
+		return rwvs.getData();
+	}
+	
+	public void checkedSet(Boolean newValue) throws RejectedValueException {
+		set(newValue);
+	}
+	public void set(Boolean newValue) {
+		rwvs.set(newValue);
+	}
+
+	public Boolean get() {
+		return rwvs.get();
+	}
+
+	public void connect(Link<? super ValueChange<Boolean>> l) {
+		rwvs.connect(l);
+	}
+
+	public void disconnect(Link<? super ValueChange<Boolean>> l) {
+		rwvs.disconnect(l);
+	}
+	public ReadWriteLock getLock() {
+		return rwvs.getLock();
+	}
+
+	
+}

@@ -1,0 +1,138 @@
+<!--
+   Glazed Lists
+   Copyright 2003-2005 publicobject.com, O'Dell Engineering Ltd.
+-->
+
+<project name="jarch-glazedlists" default="build" basedir=".">
+
+    <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+       BUILD ADMINISTRATION
+       Create build directories and set up necessary paths.
+    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+    <property name="java.target.version" value="1.5"/>
+    <property name="java.target.version.fileFriendlyName" value="java15"/>
+    <property environment="env"/>
+    <tstamp prefix="datestamp">
+        <format property="dateAndTime" pattern="yyyy-MM-dd H:mm"/>
+    </tstamp>
+
+	<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	   JAR
+	   Construct the .jar file for use in a library.
+	 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+	<target name="init" unless="initdone">
+		<property name="initdone" value="yes"/>
+		<tstamp/>
+		<!--path to put all build stuff relative to THIS "BUILD" FOLDER IN THE USER'S ECLIPSE WORKSPACE-->
+		<property name="dumpdir" value="../../release"/>
+		<mkdir dir="${dumpdir}"/>
+		<!--where other stuff is in the eclipse project:-->
+		<property name="src" value="../src"/>
+		<property name="build" value="../bin~"/>
+	</target>
+	
+	<target name="build" depends="init,compileall"
+		description="Creates glazedlists jar file containing all UI libraries.">
+		<mkdir dir="${dumpdir}/jarch/${DSTAMP}"/>
+		<jar jarfile="${dumpdir}/jarch/${DSTAMP}/jarch-glazedlists.jar" update="true" index="true">
+			<fileset dir="../bin~"/>
+			<fileset dir=".">
+				<include name="../resources/**"/>
+			</fileset>
+			<manifest>
+				<attribute name="Main-Class" value="ca.odell.glazedlists.impl.Main"/>
+				<attribute name="Sealed" value="true"/>
+				<attribute name="Built-By" value="${user.name}"/>
+				<attribute name="Built-At" value="${datestamp.dateAndTime}"/>
+				<attribute name="Implementation-Version" value="1.5.0"/>
+				<attribute name="Implementation-Title" value="Glazed Lists"/>
+				<attribute name="Implementation-URL" value="http://publicobject.com/glazedlists/"/>
+				<attribute name="Contributors" value="Jesse Wilson, Kevin Maltby, James Lemieux, Rob Eden"/>
+                <attribute name="Source-Version" value="JDK ${java.target.version}"/>
+			</manifest>
+		</jar>
+		<antcall target="dist"/>
+		<!--this ensures that parents dont build this twice, and passes along the jar locations:-->
+		<property name="built.jarch-glazedlists"
+			value="${dumpdir}/jarch/${DSTAMP}/jarch-glazedlists.jar"/>
+	</target>
+	
+	<target name="dist" depends="clean"
+		description="Create a .zip file of the source for backup or distribution. (REQUIRED BY LGPL/MPL)">
+		<zip destfile="${dumpdir}/jarch/${DSTAMP}/jarch-glazedlists-src.zip" basedir="..">
+			<exclude name="build/**"/>
+			<exclude name="bin~/**"/>
+			<exclude name="**/.*"/>
+		</zip>
+	</target>
+
+	<target name="clean"
+			description="Clean up generated files, forcing them to be rebuilt.">
+			<!-- Delete the directories where generated files fall -->
+			<delete dir="../classes"/>
+			<!-- Delete the Java 1.4 build directory -->
+			<delete dir="../java14_glazedlists"/>
+			<!-- Delete the documentation directories -->
+			<delete dir="../docs/api"/>
+			<delete dir="../docs/impl"/>
+			<delete>
+				<fileset dir=".." defaultexcludes="no">
+	                <!-- Delete temporary files from JEdit -->
+					<include name="**/*~"/>
+	                <!-- Delete the generated .jar and demo jar -->
+					<include name="glazedlists*.jar"/>
+	                <!-- Delete the generated source -->
+					<include name="glazedlists*.zip"/>
+				</fileset>
+			</delete>
+		</target>
+
+
+	<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	   COMPILE
+	 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+	<target name="compileall" depends="core,migrationkit,swing,io"
+		description="Compile all components of the source.">
+	</target>
+
+	<target name="core" depends="">
+		<mkdir dir="../bin~"/>
+		<javac destdir="../bin~" srcdir="../src" debug="on" source="${java.target.version}" target="${java.target.version}" deprecation="on">
+                <!-- swing -->
+                <exclude name="**/swing/**"/>
+                <!-- io -->
+                <exclude name="**/ctp/**"/>
+                <exclude name="**/io/**"/>
+                <exclude name="**/nio/**"/>
+                <exclude name="**/pmap/**"/>
+                <exclude name="**/rbp/**"/>
+		</javac>
+	</target>
+
+    <target name="migrationkit" depends="core">
+        <javac destdir="../bin~" srcdir="../src" debug="on" source="${java.target.version}" target="${java.target.version}" deprecation="on">
+            <include name="**/migrationkit/**"/>
+        </javac>
+    </target>
+
+	<target name="swing" depends="core">
+		<javac destdir="../bin~" srcdir="../src" debug="on" source="${java.target.version}" target="${java.target.version}" deprecation="on">
+			<include name="**/swing/**"/>
+			<exclude name="**/migrationkit/**"/>
+		</javac>
+	</target>
+
+	<target name="io" depends="core">
+		<javac destdir="../bin~" srcdir="../src" debug="on" source="${java.target.version}" target="${java.target.version}" deprecation="on">
+			<include name="**/ctp/**"/>
+			<include name="**/io/**"/>
+			<include name="**/nio/**"/>
+			<include name="**/pmap/**"/>
+			<include name="**/rbp/**"/>
+		</javac>
+	</target>
+
+</project>

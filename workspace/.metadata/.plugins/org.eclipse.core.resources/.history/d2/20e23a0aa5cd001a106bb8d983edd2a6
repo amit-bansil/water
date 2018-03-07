@@ -1,0 +1,101 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:05:35 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import com.sun.j3d.utils.geometry.Box;
+import com.sun.j3d.utils.geometry.Primitive;
+import com.sun.j3d.utils.geometry.Sphere;
+
+import cps.jarch.gui.util.ComponentProxy;
+import cps.jarch.util.collections.ArrayFinal;
+import cps.jarch.util.misc.LogEx;
+import cps.jarch.util.notes.Nullable;
+import cps.jarch.util.notes.ThreadSafe;
+import cps.water.moleculedisplay.internal.Atom;
+import cps.water.moleculedisplay.internal.Molecule;
+import cps.water.moleculedisplay.internal.ObjLib;
+import cps.water.moleculedisplay.internal.BallWaterMolecule.HydAtom;
+import cps.water.moleculedisplay.internal.BallWaterMolecule.OxAtom;
+import cps.water.moleculedisplay.internal.BallWaterMolecule.TrackGroup;
+import cps.water.moleculedisplay.internal.BallWaterMolecule.TrackGroup.TrackMaster;
+import cps.water.simulation.Ion;
+import cps.water.simulation.SimModel;
+
+import javax.media.j3d.Appearance;
+import javax.media.j3d.BoundingBox;
+import javax.media.j3d.Bounds;
+import javax.media.j3d.BranchGroup;
+import javax.media.j3d.Canvas3D;
+import javax.media.j3d.ColoringAttributes;
+import javax.media.j3d.GeometryArray;
+import javax.media.j3d.Group;
+import javax.media.j3d.LineArray;
+import javax.media.j3d.LineAttributes;
+import javax.media.j3d.LineStripArray;
+import javax.media.j3d.Material;
+import javax.media.j3d.PolygonAttributes;
+import javax.media.j3d.QuadArray;
+import javax.media.j3d.Shape3D;
+import javax.media.j3d.Transform3D;
+import javax.media.j3d.TransformGroup;
+import javax.media.j3d.TransparencyAttributes;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.vecmath.Color3f;
+import javax.vecmath.Point3d;
+import javax.vecmath.Point3f;
+import javax.vecmath.TexCoord2f;
+import javax.vecmath.Vector3f;
+
+import java.awt.Image;
+
+/**
+ * <p>
+ * A {@link ComponentProxy} that shows a 3d representation of a {@link SimModel}
+ * using a {@link DisplayModel}. Since DisplayPanels are implemented using a
+ * heavyweight container, they will be rendered on top of any intersecting
+ * lightweight swing components, even if those components are meant to be drawn
+ * on top of the display panel. To work around this: TODO: doc splitters, popups
+ * (make heavyweight), & scrollpanes/internal frames (don't use).
+ * <li></li>
+ * </ul>
+ * </p>
+ * 
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class DisplayPanel implements ComponentProxy{
+	private static final LogEx<DisplayPanel> log = LogEx
+		.createClassLog(DisplayPanel.class);
+	
+	public static interface RenderHook{
+		public void finishedRendering(Image image);
+	}
+	/**
+	 * 
+	 * @param model
+	 * @param hook
+	 */
+	@ThreadSafe public static final synchronized void renderSnapshot(SceneGraph graph,RenderHook hook) {
+		log.debugEnter(null,"graph, hook", graph, hook);
+	}	
+	public DisplayPanel() {
+		component=new JPanel();
+	}
+	private final JComponent component;
+	public JComponent getComponent() {
+		return component;
+	}
+	// ------------------------------------------------------------------------
+	private SceneGraph g;
+	public void setSceneGraph(SceneGraph g) {
+		
+	}
+	public SceneGraph getSceneGraph() {
+		
+	}
+	// ------------------------------------------------------------------------
+    private Canvas3D canvas;
+}

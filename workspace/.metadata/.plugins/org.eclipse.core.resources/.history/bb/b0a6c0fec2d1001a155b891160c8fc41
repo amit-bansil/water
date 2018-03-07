@@ -1,0 +1,60 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:05:59 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import cps.jarch.data.value.ROValue;
+import cps.jarch.data.value.RWValue;
+import cps.jarch.data.value.tools.RWFlag;
+import cps.jarch.gui.util.ComponentProxy;
+import cps.water.ControlFactory;
+import cps.water.Model;
+
+import javax.swing.Box;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+
+import java.awt.BorderLayout;
+
+/**
+ * <p>A {@link ComponentProxy} that edits a {@link DisplayModel}.
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public final class DisplayControls implements ComponentProxy{
+	private final JComponent panel;
+	private final ROValue<Model> controlledModel;
+	public final JComponent getComponent() {
+		return panel;
+	}
+	public DisplayControls(ROValue<Model> controlledModel) {
+		// components
+				
+		
+		// layout
+		panel=new JPanel(new BorderLayout(0,0));
+		Box left=Box.createHorizontalBox();
+		Box right=Box.createHorizontalBox();
+		
+		left.add(ControlFactory.stickTogether(ControlFactory.createToggleButton(shrinkAtoms, "Shrink Atoms"),
+		ControlFactory.createToggleButton(spinDisplay, "Spin Display"),
+		ControlFactory.createToggleButton(tracePaths,  "Trace Paths"));
+		
+		this.controlledModel=controlledModel;
+	}
+	// ------------------------------------------------------------------------
+
+	private final RWFlag shrinkAtoms=new RWFlag(true),
+		spinDisplay=new RWFlag(true),tracePaths=new RWFlag(true);
+	private final void zoomin() {
+		
+	}
+	private final void zoomout() {
+		
+	}
+	private final void recenter() {
+		
+	}
+}

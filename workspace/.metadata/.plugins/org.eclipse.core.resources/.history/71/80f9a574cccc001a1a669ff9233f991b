@@ -1,0 +1,142 @@
+package cps.water.simulation;
+
+import Intermol3D.Intermol3D;
+
+import javax.vecmath.Point3f;
+
+public abstract class IData{
+    static{
+        Intermol3D.splash.setState("Internal Data Structure");
+    }
+    static int numMols;
+
+    //frame control
+    protected int fnum;
+    protected int frameSteps=1;
+    public final int getFNum(){ return fnum; }
+    public final void setFNum(int n){ fnum = n; }
+    public final void setStep(int n){ frameSteps=n; }
+    public final int getStep(){ return frameSteps; }
+    //postion
+    static final int numAtoms  = 3;
+    static final int O_ATOM=2;
+    static final int H1_ATOM=0;
+    static final int H2_ATOM=1;
+    static final int PX_FEILD=0;
+    static final int PY_FEILD=1;
+    static final int PZ_FEILD=2;
+    protected float[][][] rn;
+    public final float[][][] getRaw(){ return rn; }
+
+    public final float getPX(int mol, int atom){
+        return ((float)rn[mol][PX_FEILD][atom]);
+    }
+    public final float getPY(int mol, int atom){
+        return ((float)rn[mol][PY_FEILD][atom]);
+    }
+    public final float getPZ(int mol, int atom){
+        return ((float)rn[mol][PZ_FEILD][atom]);
+    }
+
+    //ion
+    protected double[] xni,yni,zni;
+    public final float getIonX(int mol){
+        return ((float)xni[mol]);
+    }
+    public final float getIonY(int mol){
+        return ((float)yni[mol]);
+    }
+    public final float getIonZ(int mol){
+        return ((float)zni[mol]);
+    }
+    public void removeIons(){
+        ions=null;
+    }
+    public IonData[] ions=null;
+    public boolean isIonPresent(){
+    	return ions!=null&&ions.length>0&&ions[0]!=null;
+    }
+    public boolean addIon(IonData dat){
+        if(ions == null){
+            ions=new IonData[1];
+        }else{
+            IonData[] temp=new IonData[ions.length+1];
+            for(int i=0;i<ions.length;i++)
+            temp[i]=ions[i];
+            ions=temp;
+        }
+        ions[ions.length-1]=dat;
+    	return false;
+    }
+    
+    public abstract int[] generatePeMatrix(IonData data,int latRes,double cut,float x);
+    //velocity
+    protected double[][][] ve;
+    public final double[][][] getVE(){return ve;}
+    static final int VX_FEILD=0;
+    static final int VY_FEILD=1;
+    static final int VZ_FEILD=2;
+    
+    public final float getVX(int mol, int atom){ return (float)ve[mol][VX_FEILD][atom]; }
+    public final float getVY(int mol, int atom){ return (float)ve[mol][VY_FEILD][atom]; }
+    public final float getVZ(int mol, int atom){ return (float)ve[mol][VZ_FEILD][atom]; }
+    public final float getAtomKE(int mol,int trueAtomNum){ 
+        int atom=0;
+        switch(trueAtomNum){
+            case 0: atom=2; break;
+            case 2: atom=1; break;
+        }
+        return (float)Math.sqrt(ve[mol][VX_FEILD][atom]*ve[mol][VX_FEILD][atom]+
+                                ve[mol][VY_FEILD][atom]*ve[mol][VY_FEILD][atom]+
+                                ve[mol][VZ_FEILD][atom]*ve[mol][VZ_FEILD][atom]);
+    }
+    //pe
+    protected double[] potH2O;
+    public final double[] getPE(){ return potH2O; }
+    public final double getAtomPE(int num){ return potH2O[num]; }
+  	//bonds
+  	protected int[][] indxww;
+    public final int[][] getBonds(){ return indxww; }
+    public abstract int getNumBonds();
+    //bounds
+    public abstract Point3f getBoundsSize();
+    //mode
+    public static final int MODE_KPKT=0,MODE_KDKT=1,
+    	MODE_KPKE=2,MODE_KDKE=3;
+    protected int mode=0;
+    public abstract void setMode(int m);
+
+    //jumped
+    public abstract boolean getJumped(int mol,int fld);
+    //parameters
+    public abstract double getPressure();
+    public abstract void setPressure(double value);
+    
+    public abstract double getTemp();
+    public abstract void setTemp(double value);
+    
+    public abstract double getEnergy();
+    public abstract void setEnergy(double value);
+    
+    public abstract double getDensity();
+    public abstract void setDensity(double value);
+	//values
+    public abstract double getTemperature2();
+    public abstract double getDensity2();
+    public abstract double getPressure2();
+    public abstract double getPE2();
+    public abstract double getKE2();
+    public abstract double getTotalEnergy2();
+   
+    public boolean running=false;
+    public void start(){
+        running=true;
+    }
+    public void stop(){
+        running=false;
+    }
+    public abstract void step() throws ShakeFailException;
+    public abstract void clear();
+
+}
+

@@ -1,0 +1,62 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:05:35 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import cps.jarch.data.value.ROValue;
+import cps.jarch.gui.util.ComponentProxy;
+import cps.jarch.util.notes.ThreadSafe;
+import cps.water.Model;
+import cps.water.simulation.SimModel;
+
+import javax.media.opengl.GLCanvas;
+import javax.media.opengl.GLCapabilities;
+import javax.media.opengl.GLDrawableFactory;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+
+import java.awt.Image;
+
+/**
+ * <p>
+ * A {@link ComponentProxy} that shows a 3d representation of a {@link SimModel}
+ * using a {@link DisplayModel}. Since DisplayPanels are implemented using a
+ * heavyweight container, they will be rendered on top of any intersecting
+ * lightweight swing components, even if those components are meant to be drawn
+ * on top of the display panel. To work around this: TODO: doc splitters, popups
+ * (make heavyweight), & scrollpanes/internal frames (don't use).
+ * <li></li>
+ * </ul>
+ * </p>
+ * 
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class DisplayPanel implements ComponentProxy{
+	
+
+	public DisplayPanel(ROValue<Model> model) {
+		component=new JPanel();
+		GLCanvas canvas=GLDrawableFactory.getFactory().createGLCanvas(
+			new GLCapabilities());
+	}
+	private final JComponent component;
+	public JComponent getComponent() {
+		return component;
+	}
+	public void shutdown() {
+	}
+	private final Renderer offscreenRenderer=new Renderer();
+	private final Renderer renderer=new Renderer();
+	public final void readDisplayModel(DisplayModel d) {
+		
+	}
+	public final void readSimModel(SimModel m) {
+		
+	}
+	public final void render() {
+		
+	}
+	
+}

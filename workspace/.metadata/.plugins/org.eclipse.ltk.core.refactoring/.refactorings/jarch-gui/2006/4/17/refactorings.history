@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<session version="1.0">
+<refactoring description="Rename type 'cps.jarch.gui.resources.ResourceAccessor' to 'MessageBundle'" flags="589830" id="org.eclipse.jdt.ui.rename.type" input="/src&lt;cps.jarch.gui.resources{ResourceAccessor.java[ResourceAccessor" matchStrategy="1" name="MessageBundle" qualified="false" references="true" similarDeclarations="false" stamp="1146254681187" textual="false" version="1.0"/>
+</session>

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<session version="1.0">
+<refactoring clone="true" description="Infer generic type arguments on 'jarch-util'" element1="/src&lt;cps.jarch.util.collections{CursorableLinkedList.java" flags="6" id="org.eclipse.jdt.ui.infer.typearguments" leave="true" stamp="1145824647578" version="1.0"/>
+</session>

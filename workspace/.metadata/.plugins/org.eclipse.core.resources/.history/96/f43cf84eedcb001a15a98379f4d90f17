@@ -1,0 +1,105 @@
+/*
+ * WorkspaceDialog.java
+ * CREATED:    Mar 13, 2005 6:27:50 PM
+ * AUTHOR:     Amit Bansil
+ * PROJECT:    CELEST-Framework-gui
+ * 
+ * Copyright 2005 The Center for Polymer Studies,
+ * Boston University, all rights reserved.
+ * */
+package cps.jarch.gui.dialog;
+
+import cps.jarch.gui.resources.Pattern;
+import cps.jarch.gui.resources.ResourceAccessor;
+import cps.jarch.util.misc.LangUtils;
+import cps.jarch.util.notes.Constant;
+import cps.jarch.util.notes.Hook;
+import cps.jarch.util.notes.Nullable;
+import cps.jarch.util.notes.ThreadSafe;
+
+import java.awt.Component;
+
+/**
+ * Generic superclass for thread safe blocking modal dialogs. immutable.
+ * **unsure how this implements class Pattern, but I changed message to be a string, which clears up the close dialog box missing text
+ * 
+ * @version $Id: WorkspaceDialog.java 548 2005-09-02 14:25:58Z bansil $
+ * @author Amit Bansil
+ */
+public abstract class WorkspaceDialog<RT> {
+	private static final ResourceAccessor dialogResources = ResourceAccessor
+			.load(WorkspaceDialog.class);
+	/**
+	 * common resources for dialogs in WorkspaceDialog package 
+	 * TODO put in separate class or even split up?
+	 */
+	static final ResourceAccessor getDialogResources() {
+		return dialogResources;
+	}
+
+	// ------------------------------------------------------------------------
+	// DESCRIPTION
+	// ------------------------------------------------------------------------
+	// name&title must be defined
+
+	private final String name, title;
+	//Pattern class cannot be handled by JOptionPane, changed to string
+	private final String message;
+	// TODO not thread safe, need to make it so by just exposing put and syncing
+	// on that and show
+	public final @Constant @Nullable String getMessage() {
+		return message;
+	}
+
+	public final @ThreadSafe @Constant String getName() {
+		return name;
+	}
+
+	public final @ThreadSafe @Constant String getTitle() {
+		return title;
+	}
+
+	protected WorkspaceDialog(String name, ResourceAccessor res) {
+		//only require message if we have message data
+		this(name, res.loadString(name + ".title"),
+			res.tryLoadString(name + ".message"));
+	}
+	// TODO rewrite w. described, make this a described proxy, use description as
+	// message pattern?
+	protected WorkspaceDialog(String name, String title,@Nullable String messagePattern) {
+		LangUtils.checkArgNotNull(name);
+		this.name = name;
+		this.title = title;
+		//unsure how this implements class Pattern, but I changed message to be a string, which clears up the close dialog box missing text
+		//this.message = messagePattern!=null?new Pattern(messagePattern):null;
+		this.message = messagePattern!=null?new String(messagePattern):null;
+		
+	}
+
+	// ------------------------------------------------------------------------
+	// SHOW
+	// ------------------------------------------------------------------------
+
+	/**
+	 * create a new Dialog and block till the user accepts it.
+	 * 
+	 * @param parent
+	 *            the component to center dialog above, <code>null</code> is
+	 *            allowed
+	 * @return user's selection or <code>null</code> if none
+	 */
+	public final @ThreadSafe @Nullable RT show(@Nullable final Component parent) {
+		//TODO make this thread safe by delgating to EDT and converting pattern to string?...
+		return _show(parent);
+	}
+
+	/**
+	 * hook to show dialog. occurs on EDT. exceptions are promoted to errors and
+	 * propagated to show caller
+	 * 
+	 * @param parent
+	 *            component to show above, may be null
+	 * @return user's selection or null if none.
+	 */
+	@Hook protected abstract @Nullable RT _show(@Nullable Component parent);
+}

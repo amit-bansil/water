@@ -1,0 +1,37 @@
+/*
+ * SimpleLink.java
+ * CREATED:    Jun 19, 2005 11:09:48 AM
+ * AUTHOR:     Amit Bansil
+ * PROJECT:    celest-framework-data
+ * 
+ * Copyright 2005 The Center for Polymer Studies,
+ * Boston University, all rights reserved.
+ * */
+package cps.jarch.data.event.tools;
+
+
+
+import cps.jarch.data.event.GenericLink;
+
+import java.util.EventObject;
+
+/**
+ * Shorthand for <code>GenericLink<EventObject></code>. can optionally have a name
+ * which is used for debugging. Name should be the target of the
+ * <code>Link</code>, i.e. what it updates, not what it is connected to.
+ * Usually this is not needed since inner classes pickup a class name from there
+ * parents.
+ */
+public abstract class Link implements GenericLink<EventObject> {
+	public Link() {
+		name=null;
+	}
+	private final String name;
+	public Link(String name) {
+		this.name=name;
+	}
+	@Override
+	public String toString() {
+		return getClass().getSimpleName()+name==null?"": ':' +name;
+	}
+}

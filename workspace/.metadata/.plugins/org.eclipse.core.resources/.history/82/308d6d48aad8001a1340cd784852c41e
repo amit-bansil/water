@@ -1,0 +1,225 @@
+/*
+ * CREATED ON:    Apr 15, 2006 5:45:32 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.jarch.simulation.snapshot;
+
+import ca.odell.glazedlists.EventList;
+import cps.jarch.data.collections.ListView;
+import cps.jarch.data.event.Unlinker;
+import cps.jarch.data.event.tools.SimpleLink;
+import cps.jarch.gui.data.MiscBinder;
+import cps.jarch.gui.util.EDTWorker;
+import cps.jarch.gui.util.GuiUtils;
+import cps.jarch.simulation.components.AspectLayout;
+import cps.jarch.simulation.components.AspectLayout.Position;
+
+import javax.naming.ldap.ControlFactory;
+import javax.swing.BorderFactory;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
+import javax.swing.ScrollPaneConstants;
+import javax.swing.border.Border;
+
+import java.awt.AlphaComposite;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Composite;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridLayout;
+import java.awt.Image;
+import java.awt.Insets;
+import java.util.EventObject;
+import java.util.concurrent.TimeUnit;
+
+
+/**
+ * <p>TODO document SnapshotChooser, vertical layout
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+//the 'unfocuesed' Snap is the one that is selected but not 
+public class SnapshotChooser<SnapType extends SnapshotsModel.Snap> {
+	private static enum PaintedState{NORMAL,FOCUSED,UNFOCUSED};
+	
+	private final class SnapshotComponent implements Unlinker{
+		final JComponent titleHolder;
+		final JTextField titleField;
+		private final SnapType snap;
+
+		SnapshotComponent(SnapType snap){
+			this.snap=snap;
+			snap.getThumbnailChangeSource().connect(thumnailLink);
+			titleField=new JTextField();
+			titleHolder=new JPanel(new BorderLayout());
+			titleHolder.setBorder(TitleBorder);
+			titleHolder.add(titleField);
+			titleUnlinker=MiscBinder.bindText(snap.getTitle(), titleField);
+		}
+		private final Unlinker titleUnlinker;
+		private final SimpleLink thumnailLink=GuiUtils.createRepaintListener(thumbnail);
+
+		public void unlink() {
+			snap.getThumbnailChangeSource().disconnect(thumnailLink);
+			titleUnlinker.unlink();
+		}
+		//repaint thumbnail if paintState is wrong, repaints should be coalesced automatically if needed
+		//use the focused border if this is focused, the unfocused border if its unfocused
+		//and otherwise normal
+		//if a component is moused only it should have the focusedBorder
+		final void update() {
+			Border thumbnailBorder=NormalThumbnailBorder;
+			if(model.getFocusedSelection().get()==snap) {
+				if(mousedComponent==null) thumbnailBorder=FocusedThumbnailBorder;
+				if(paintState!=PaintedState.FOCUSED)thumbnail.repaint();
+			}else if(model.getUnFocsedSelection()==snap) {
+				thumbnailBorder=UnfocusedThumbnailBorder;
+				if(paintState!=PaintedState.UNFOCUSED)thumbnail.repaint();
+			}
+			if(mousedComponent==this) {
+				thumbnailBorder=FocusedThumbnailBorder;
+			}else assert thumbnailBorder!=FocusedThumbnailBorder;
+			if(thumbnail.getBorder()!=thumbnailBorder)thumbnail.setBorder(thumbnailBorder);
+		}
+		//what type of focusing was painted
+		private PaintedState paintState=PaintedState.NORMAL;
+		private final JComponent thumbnail= new JComponent(){
+			@Override protected void paintComponent(Graphics g) {
+				paintState=PaintedState.NORMAL;
+				
+				g=g.create();
+				
+				Dimension size=getSize();
+				Insets insets=getInsets();
+				int x=insets.left,y=insets.top;
+				size.width-=x+insets.right;
+				size.height-=y+insets.left;
+				
+				Image image=snap.getThumbnail();
+				if(image!=null&&image.getWidth(this)==size.width&&image.getHeight(this)==size.height) {
+					g.drawImage(image,x,y,this);
+					drawOverlay((Graphics2D)g,x, y, size.width, size.height);
+				}else {
+					snap.requestUpdateThumbnail(size.width,size.height);
+					g.setColor(Color.BLACK);
+					g.fillRect(x, y, size.width, size.height);
+				}
+				
+				g.dispose();
+			}
+			private final void drawOverlay(Graphics2D g,int x,int y,int w,int h) {
+				Color overlayColor;
+				
+				if(model.getFocusedSelection().get()==snap) {
+					overlayColor=FocusedColor;
+					paintState=PaintedState.FOCUSED;
+				}else if(model.getUnFocsedSelection()==snap) {
+					overlayColor=UnfocusedColor;
+					paintState=PaintedState.UNFOCUSED;
+				}else {
+					//draw nothing in normal state
+					return;
+				}
+				//note that this leaves the graphics config all messed up
+				g.setComposite(OverlayComposite);
+				g.setColor(overlayColor);
+				g.drawRect(x, y, w, h);
+			}
+		};
+	}
+	
+	// ------------------------------------------------------------------------
+	//layout components
+	
+	private final JComponent panel;
+	private final AspectLayout layout;
+	//we put titles and shots on separate grids so that the layout
+	//can correctly manage the aspect ratio of shots
+	private final JComponent titles;
+	private final GridLayout titlesGrid;
+	private final JComponent thumbnails;
+	private final GridLayout thumbnailGrid;
+	
+	// ------------------------------------------------------------------------
+	//layout constants
+	
+	private static final int MED=3;
+	private static final Color FocusedColor=Color.orange.darker();
+	private static final Color UnfocusedColor=Color.DARK_GRAY;
+	private static final Border PanelBorder=BorderFactory.createEmptyBorder(MED,MED,MED,MED);
+	private static final Border TitleBorder=BorderFactory.createEmptyBorder(MED,MED,MED,MED);
+	private static final Border FocusedThumbnailBorder=BorderFactory.createLineBorder(FocusedColor, MED);
+	private static final Border NormalThumbnailBorder=BorderFactory.createEmptyBorder(MED, MED, MED, MED);
+	private static final Border UnfocusedThumbnailBorder=BorderFactory.createLineBorder(UnfocusedColor);
+	private static final Composite OverlayComposite=AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.6f);
+	
+	// ------------------------------------------------------------------------
+	
+	private final SnapshotsModel model;
+	private final class SnapshotComponents extends ListView<SnapType,SnapshotComponent>{
+		public SnapshotComponents(EventList<SnapType> in) {
+			super(in);
+		}
+
+		@Override protected SnapshotComponent create(SnapType newIn, int index) {
+			SnapshotComponent c=new SnapshotComponent(newIn);
+			titles.add(c.titleField,index);
+			thumbnails.add(c.thumbnail,index);
+			requestUpdateAspect();
+			return c;
+		}
+
+		@Override protected void deleted(SnapshotComponent oldOut, int index) {
+			titles.remove(oldOut.titleField);
+			thumbnails.remove(oldOut.thumbnail);
+			oldOut.unlink();
+			if(mousedComponent==oldOut)mousedComponent=null;
+			requestUpdateAspect();
+		}
+
+		@Override protected SnapshotComponent update(SnapType newInput,
+				SnapshotComponent oldOutput, int index) {
+			deleted(oldOutput, index);
+			return create(newInput, index);
+		}
+	}
+	private final SnapshotComponents components;
+	private SnapshotComponent mousedComponent;
+	
+	// ------------------------------------------------------------------------
+
+	
+	public SnapshotChooser(SnapshotsModel<SnapType> model) {
+		this.model=model;
+		
+		layout=new AspectLayout();
+		JPanel content=new JPanel(layout);
+		panel=new JScrollPane(content,ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED,
+			ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+		titlesGrid=new GridLayout();
+		titles=new JPanel(titlesGrid);
+		thumbnailGrid=new GridLayout();
+		thumbnails=new JPanel(thumbnailGrid);
+		content.add(thumbnails,Position.Center);
+		content.add(titles,Position.North);
+		
+		components=new SnapshotComponents(model.getSnapshots());	
+	}
+
+	public JComponent getComponent() {
+		return panel;
+	}
+	private void requestUpdateAspect() {
+		EDTWorker.runConditional(2, TimeUnit.MILLISECONDS, aspectUpdater);
+	}
+	private final Runnable aspectUpdater=new Runnable() {
+		public void run() {
+			
+		}
+	};
+}

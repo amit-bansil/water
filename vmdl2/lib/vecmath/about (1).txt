@@ -1,0 +1,1 @@
+vecmath checked out from java.net on 8-17-04

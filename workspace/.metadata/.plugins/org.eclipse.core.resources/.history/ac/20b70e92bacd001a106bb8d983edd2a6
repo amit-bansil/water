@@ -1,0 +1,25 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:03:14 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water;
+
+import cps.water.data.DataViewer;
+
+/**
+ * <p>TODO document GUI
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class GUI {
+
+	public GUI(AppModel model) {
+	}
+
+	//views
+	final DataViewer dataViewer1,dataViewer2;
+
+	public void show() {
+	}
+}

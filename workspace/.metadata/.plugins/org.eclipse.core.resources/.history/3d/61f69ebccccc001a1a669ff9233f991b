@@ -1,0 +1,115 @@
+// Decompiled by DJ v3.2.2.67 Copyright 2002 Atanas Neshkov  Date: 8/28/02 3:39:06 PM
+// Home Page : http://members.fortunecity.com/neshkov/dj.html  - Check often for new version!
+// Decompiler options: packimports(3) 
+// Source File Name:   MovieIO.java
+
+package Intermol3D;
+
+import cps.water.simulation.IData;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.util.Vector;
+
+// Referenced classes of package Intermol3D:
+//            IData, IInputData, FrameProperty
+
+public abstract class MovieIO
+{
+
+    protected MovieIO(IData d, IInputData i)
+    {
+        VALUE_EMPTY = new Object();
+        ion1Position = new FrameProperty("Ion1Position") {
+
+            public void read(DataInputStream datainputstream)
+                throws IOException
+            {
+            }
+
+            public void write(DataOutputStream dataoutputstream)
+                throws IOException
+            {
+            }
+
+        };
+        ion2Position = new FrameProperty("Ion2Position") {
+
+            public void readInitial(DataInputStream datainputstream)
+                throws IOException
+            {
+            }
+
+            public void writeInitial(DataOutputStream dataoutputstream)
+                throws IOException
+            {
+            }
+
+            public void read(DataInputStream datainputstream)
+                throws IOException
+            {
+            }
+
+            public void write(DataOutputStream dataoutputstream)
+                throws IOException
+            {
+            }
+
+        };
+        FLAG_BYTE = 127;
+        data = d;
+        inputData = i;
+    }
+
+    protected static final char compressChar(double v, double max, double min)
+    {
+        return (char)(int)(((v - min) / (max - min)) * 65535D);
+    }
+
+    protected static final float expandChar(char v, double max, double min)
+    {
+        return (float)((double)((float)v / 65535F) * (max - min) + min);
+    }
+
+    protected static final byte compressByte(double v, double max, double min)
+    {
+        return (byte)(int)(((v - min) / (max - min)) * 255D + -128D);
+    }
+
+    protected static final float expandByte(byte v, double max, double min)
+    {
+        return (float)((double)((float)(v + -128) / 255F) * (max - min) + min);
+    }
+
+    protected static final byte compressFlagByte(double v, double max, double min)
+    {
+        return (byte)(int)(((v - min) / (max - min)) * 254D + -128D);
+    }
+
+    protected static final float expandFlagByte(byte v, double max, double min)
+    {
+        return (float)((double)((float)(v + -128) / 254F) * (max - min) + min);
+    }
+
+    protected static final byte FLAG_END_MOVIE = -1;
+    protected static final byte FLAG_END_FLAGS = 0;
+    protected static final byte FLAG_KEY_FRAME = 1;
+    protected static final byte FLAG_ADD_ION = 2;
+    protected static final byte FLAG_REMOVE_ION = 3;
+    protected static final byte FLAG_ADD_PROPERTY = 4;
+    protected static final byte FLAG_REMOVE_PROPERTY = 5;
+    protected static final byte FLAG_BOND_ON = 6;
+    protected static final byte FLAG_BOND_OFF = 7;
+    protected static final byte FLAG_VEL_ON = 8;
+    protected static final byte FLAG_VEL_OFF = 9;
+    protected static final byte FLAG_PE_ON = 10;
+    protected static final byte FLAG_PE_OFF = 11;
+    Object VALUE_EMPTY;
+    protected final IData data;
+    protected final IInputData inputData;
+    FrameProperty ion1Position;
+    FrameProperty ion2Position;
+    protected final Vector propertyListeners = new Vector();
+    byte FLAG_BYTE;
+}

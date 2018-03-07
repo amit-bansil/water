@@ -1,0 +1,61 @@
+/*
+ * CREATED ON:    Apr 16, 2006 3:46:34 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import cps.jarch.util.notes.Nullable;
+import cps.water.simulation.SimModel;
+import cps.water.util.Tuple3f;
+
+import javax.media.opengl.GL;
+import javax.media.opengl.glu.GLU;
+
+/**
+ * <p>Draws a Scenegraph.
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class Renderer {
+	private SimModel simModel;
+	private DisplayModel displayModel;
+	private final Camera camera=new Camera();
+	
+	//a packed array
+	//{molecule 1: oxygen atom: x, y, z, hydrogen atom 1: x, y, z, hydrogen atom 2: x, y z, molecule 2...}
+	private float[] atomPositions;
+	private int moleculeCount;
+	private int hBondCount;
+	//a packed array
+	//{bond 1: source position x,y,z, destination position: x,y,z, bond 2...}
+	private float[] hBondPositions;
+	private Tuple3f boxSize;
+	
+	private final synchronized void update() {
+		
+	}
+	
+	public final synchronized void setSimModel(@Nullable SimModel m) {
+	}
+	public final synchronized void setDisplayModel(@Nullable DisplayModel m) {
+	}
+	
+	// ------------------------------------------------------------------------
+	// rendering
+	public synchronized void init(GL gl,GLU glu) {
+		
+	}
+	
+	private final float[] positions;
+	private final 
+	public synchronized void render(GL gl, GLU glu) {
+		
+	}
+	
+}
+final class Camera{
+	
+}
+
+

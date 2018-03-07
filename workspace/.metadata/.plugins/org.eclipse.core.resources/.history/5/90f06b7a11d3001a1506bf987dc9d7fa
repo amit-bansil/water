@@ -1,0 +1,205 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:08:41 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.simulation;
+
+import cps.jarch.data.event.tools.SimpleSource;
+import cps.jarch.data.event.tools.SimpleSourceImp;
+import cps.jarch.data.value.RWValue;
+import cps.jarch.data.value.tools.BoundedValue;
+import cps.jarch.data.value.tools.RWFlag;
+import cps.jarch.data.value.tools.RWValueImp;
+import cps.jarch.util.collections.ArrayFinal;
+import cps.jarch.util.collections.CursorableLinkedList;
+import cps.jarch.util.misc.Worker;
+import cps.jarch.util.notes.Nullable;
+import cps.water.util.Tuple3f;
+
+import java.util.Iterator;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+//threading:
+//RWValue/BoundedValues modifiable on any thread
+//step/clear/load/save/insertIon/removeIon return immediatly but execute on SimModel worker thread
+//all getXXX methods (except getChangeSource) are accessible only from SimModel worker thread
+//listeners to change source are notified on simModel worker thread
+/**
+ * <p>TODO document SimModel
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class SimModel {
+	private final Engine raw=new Engine();
+	private final ReadWriteLock lock=new ReentrantReadWriteLock();
+	
+	private static final Worker worker=new Worker();
+	
+	// ------------------------------------------------------------------------
+
+	private int frameNumber;
+	public final int getFrameNumber() {
+		return frameNumber;
+	}
+
+	private final Scene scene=new Scene(raw);
+	// ------------------------------------------------------------------------
+	// parameters
+	private int nextRecord;
+	private abstract class DataSet {
+		private final String name;
+
+		public DataSet(String name) {
+			this.name = name;
+		}
+
+		@Override public final String toString() {
+			return name;
+		}
+
+		abstract float getValue();
+	}
+	
+	private final ArrayFinal<DataSet> dataSets = ArrayFinal.create(
+		new DataSet("Temperature") {
+			@Override float getValue() {return (float)raw.temp;}},
+		new DataSet("Density") {
+			@Override float getValue() {return (float)raw.rho;}},
+		new DataSet("Pressure") {
+			@Override float getValue() {return (float)raw.temp;}},
+		new DataSet("Potential Energy") {
+			@Override float getValue() {return (float)raw.epot;}},
+		new DataSet("Kinetic Energy") { 
+			@Override float getValue() {return (float)raw.ekin;}},
+		new DataSet("Total Energy") { 
+			@Override float getValue() {return (float)raw.eges;}},
+		new DataSet("Volume") { 
+			@Override float getValue() {return (float)(raw.bx*raw.by*raw.bz);}},
+		new DataSet("Time") { 
+			@Override float getValue() {return getFrameNumber();}}
+	);
+	
+	private final CursorableLinkedList recordings=new CursorableLinkedList();
+	public final int getRecordingCount() {	
+		return recordings.size();
+	}
+	@SuppressWarnings("unchecked") public final Iterator<ArrayFinal<Float>> getRecordings(){
+		return recordings.listIterator();
+	}
+
+	private final BoundedValue<Integer> recordStepSize=new BoundedValue<Integer>(5,1,500,lock);
+	private final BoundedValue<Integer> maxRecordingCount=new BoundedValue<Integer>(200,50,500,lock);
+	public final BoundedValue<Integer> maxRecordingCount(){
+		return maxRecordingCount;
+	}
+	public final BoundedValue<Integer> recordStepSize(){
+		return recordStepSize;
+	}
+
+	private final InputParameters inputParameters=new InputParameters(raw,lock);
+
+	private final RWFlag running=new RWFlag(false);//not locked since it's never read
+
+	
+	// ------------------------------------------------------------------------
+	//time
+	private final BoundedValue<Integer> stepSize=new BoundedValue<Integer>(5,1,100,lock);
+	public final BoundedValue<Integer> stepSize(){
+		return stepSize;
+	}
+	
+	// ------------------------------------------------------------------------
+
+	public SimModel(SimConfig initialConfig) {
+		this.initialConfig = initialConfig;
+		//ok since we're not live yet
+		_clear();
+	}
+
+	private SimConfig initialConfig;
+
+	public static abstract interface ShakeFailHook{
+		public void shakeFailed(ShakeFailException e);
+	}
+	public void step(final ShakeFailHook failHook) {
+		worker.runASAP(new Runnable() {
+			public void run() {
+				try {
+					_step();
+				} catch (ShakeFailException e) {
+					failHook.shakeFailed(e);
+				}
+			}
+		});
+	}
+	private final void _step() throws ShakeFailException {
+		
+		final int steps, recordStep, recordCount;
+		lock.readLock().lock();
+		try {
+			steps = stepSize.get();
+			recordStep = recordStepSize.get();
+			recordCount = maxRecordingCount.get();
+			inputParameters.apply();
+		} finally {
+			lock.readLock().unlock();
+		}
+		for (int i = 0; i < steps; i++) {
+			raw.step();
+			frameNumber++;
+			if (frameNumber == nextRecord) {
+				ArrayFinal.Builder<Float> recordingBuilder = new ArrayFinal.Builder<Float>(
+						dataSets.getLength());
+				for (DataSet d : dataSets)
+					recordingBuilder.add(d.getValue());
+				recordings.addLast(recordingBuilder.create());
+				nextRecord += recordStep;
+			}
+		}
+		for (int excessRecordings = recordCount - getRecordingCount(); excessRecordings > 0;
+			excessRecordings--) {
+			
+			recordings.removeFirst();
+		}
+		source.sendEvent();
+	}
+	
+	private final void _clear() {
+		nextRecord=frameNumber=0;
+		raw.clear();
+		removeIons();
+		initialConfig.toData(raw);
+		raw.initial();
+		raw.tempav = raw.atemp;
+		raw.presav = raw.apres;
+		raw.rho = raw.arho;
+		raw.hbonds = 0;
+		// ObjLib.boundsSize = getBoundsSize();
+		//if (initialConfig != null) initialConfig.toData(raw);
+		lock.writeLock().lock();
+		try {
+			//clearParameters
+			oldTemp=(float)raw.etemp;desiredTemperature.setUnchecked(oldTemp);
+			oldPres=(float)raw.epres;desiredPressure.setUnchecked(oldPres);
+			oldDens=(float)raw.erho;desiredDensity.setUnchecked(oldDens);
+			oldMode=Mode.KPresKTemp;mode.set(oldMode);
+			
+			//clear data
+			recordings.clear();
+			maxRecordingCount.getData().loadInitial();
+			stepSize.getData().loadInitial();
+			recordStepSize.getData().loadInitial();
+		}finally {
+			lock.writeLock().unlock();
+		}
+		source.sendEvent();
+	}
+	
+	// ------------------------------------------------------------------------
+	private final SimpleSourceImp source=new SimpleSourceImp(this);
+	public final SimpleSource getChangeSource() {
+		return source;
+	}
+}

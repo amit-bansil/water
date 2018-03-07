@@ -1,0 +1,105 @@
+/*
+ * CREATED ON:    Apr 23, 2006 5:47:37 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.simulation;
+
+import cps.jarch.data.value.tools.BoundedValue;
+import cps.jarch.util.collections.ArrayFinal;
+import cps.jarch.util.collections.CursorableLinkedList;
+
+import java.util.Iterator;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+/**
+ * <p>TODO document OutputParameters
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class OutputParameters {
+	private final ReentrantReadWriteLock lock;
+	public OutputParameters(ReentrantReadWriteLock lock) {
+		this.lock=lock;
+	}
+	
+	private int recordStep=-1,recordCount=-1;
+	
+	void preStep() {
+		if(lock.getReadLockCount()<11)throw new IllegalThreadStateException();
+		
+		recordStep = recordStepSize.get();
+		recordCount = maxRecordingCount.get();
+	}
+	private int frameNumber;
+	void step() {
+		assert recordStep!=-1;
+		
+		frameNumber++;
+		if (frameNumber == nextRecord) {
+			ArrayFinal.Builder<Float> recordingBuilder = new ArrayFinal.Builder<Float>(
+					dataSets.getLength());
+			for (DataSet d : dataSets)
+				recordingBuilder.add(d.getValue());
+			recordings.addLast(recordingBuilder.create());
+			nextRecord += recordStep;
+		}
+	}
+	void postStep() {
+		for (int excessRecordings = recordCount - getRecordingCount(); excessRecordings > 0;
+		excessRecordings--)  recordings.removeFirst();
+	}
+
+	
+	private int nextRecord;
+	private abstract class DataSet {
+		private final String name;
+
+		public DataSet(String name) {
+			this.name = name;
+		}
+
+		@Override public final String toString() {
+			return name;
+		}
+
+		abstract float getValue();
+	}
+	
+	private final ArrayFinal<DataSet> dataSets = ArrayFinal.create(
+		new DataSet("Temperature") {
+			@Override float getValue() {return (float)raw.temp;}},
+		new DataSet("Density") {
+			@Override float getValue() {return (float)raw.rho;}},
+		new DataSet("Pressure") {
+			@Override float getValue() {return (float)raw.temp;}},
+		new DataSet("Potential Energy") {
+			@Override float getValue() {return (float)raw.epot;}},
+		new DataSet("Kinetic Energy") { 
+			@Override float getValue() {return (float)raw.ekin;}},
+		new DataSet("Total Energy") { 
+			@Override float getValue() {return (float)raw.eges;}},
+		new DataSet("Volume") { 
+			@Override float getValue() {return (float)(raw.bx*raw.by*raw.bz);}},
+		new DataSet("Time") { 
+			@Override float getValue() {return getFrameNumber();}}
+	);
+	
+	private final CursorableLinkedList recordings=new CursorableLinkedList();
+	public final int getRecordingCount() {	
+		return recordings.size();
+	}
+	@SuppressWarnings("unchecked") public final Iterator<ArrayFinal<Float>> getRecordings(){
+		return recordings.listIterator();
+	}
+
+	private final BoundedValue<Integer> recordStepSize=new BoundedValue<Integer>(5,1,500,lock);
+	private final BoundedValue<Integer> maxRecordingCount=new BoundedValue<Integer>(200,50,500,lock);
+	public final BoundedValue<Integer> maxRecordingCount(){
+		return maxRecordingCount;
+	}
+	public final BoundedValue<Integer> recordStepSize(){
+		return recordStepSize;
+	}
+
+}

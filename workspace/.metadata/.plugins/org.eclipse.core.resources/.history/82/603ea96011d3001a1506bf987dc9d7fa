@@ -1,0 +1,100 @@
+/*
+ * CREATED ON:    Apr 23, 2006 5:30:28 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.simulation;
+
+import cps.jarch.data.value.RWValue;
+import cps.jarch.data.value.tools.BoundedValue;
+import cps.jarch.data.value.tools.RWValueImp;
+
+import java.util.concurrent.locks.ReadWriteLock;
+
+/**
+ * <p>TODO document InputParameters
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class InputParameters {
+	enum Mode {
+		KPresKTemp, KDensKTemp, KPresKEn, KDensKEn
+	}
+	private final Engine raw;
+	private final ReadWriteLock lock;
+	InputParameters(Engine raw,ReadWriteLock lock){
+		this.raw=raw;
+		this.lock=lock;
+		mode=new RWValueImp<Mode>(Mode.KPresKTemp,false,lock);
+		desiredTemperature=new BoundedValue<Float>(1f,1f,1000f,lock);
+		desiredPressure=new BoundedValue<Float>(1f,-1000f,1000f,lock);
+		desiredDensity=new BoundedValue<Float>(.5f,.001f,.99999f,lock);
+	}
+	private final RWValue<Mode> mode;
+	private final BoundedValue<Float> desiredTemperature;
+	private final BoundedValue<Float> desiredPressure;
+	private final BoundedValue<Float> desiredDensity;
+	
+	
+	public final BoundedValue<Float> desiredDensity(){
+		return desiredDensity;
+	}
+	
+	public final BoundedValue<Float> desiredPressure(){
+		return desiredPressure;
+	}
+	public final BoundedValue<Float> desiredTemperature(){
+		return desiredTemperature;
+	}
+	public final RWValue<Mode> mode(){
+		return mode;
+	}
+
+	private Mode oldMode;
+	private float oldTemp,oldPres,oldDens;
+	
+	public final void apply() {
+
+		if (oldMode != mode.get()) {
+			switch (mode.get()) {
+				case KPresKTemp: // '\0'
+					raw.kpres = true;
+					raw.ktemp = true;
+					break;
+
+				case KDensKTemp: // '\001'
+					raw.kpres = false;
+					raw.ktemp = true;
+					break;
+
+				case KPresKEn: // '\002'
+					raw.kpres = true;
+					raw.ktemp = false;
+					break;
+
+				case KDensKEn: // '\003'
+					raw.kpres = false;
+					raw.ktemp = false;
+					break;
+			}
+			oldMode = mode.get();
+		}
+		if (raw.ktemp) {
+			if (oldTemp != desiredTemperature.get()) {
+				oldTemp = desiredTemperature.get();
+				raw.setemperature(oldTemp);
+			}
+		}
+		if (raw.kpres) {
+			if (oldPres != desiredPressure.get()) {
+				oldPres = desiredPressure.get();
+				raw.setpressure(oldPres);
+			}
+		} else {// kdens
+			if (oldDens != desiredDensity.get()) {
+				oldDens = desiredDensity.get();
+				raw.setdensity(oldDens);
+			}
+		}
+	}
+}

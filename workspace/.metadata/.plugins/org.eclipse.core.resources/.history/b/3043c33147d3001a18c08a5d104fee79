@@ -1,0 +1,60 @@
+/*
+ * CREATED ON:    Apr 23, 2006 10:56:54 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import cps.water.moleculedisplay.GLAccess.DisplayList;
+
+import javax.media.opengl.GL;
+import javax.media.opengl.glu.GLU;
+import javax.media.opengl.glu.GLUquadric;
+
+/**
+ * <p>TODO document CovBondDrawer
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class CovBondDrawer {
+	private boolean listCreated = false;
+
+	private GLAccess.DisplayList displayList;
+	
+	public CovBondDrawer() {
+		
+	}
+	
+	public void kill(GLAccess gla) {
+		displayList.kill();
+	}
+	
+	public void init(GLAccess gla) {
+		if(listCreated)throw new IllegalStateException("list already created");
+
+		GLUquadric quadric = gla.glu().gluNewQuadric();
+		gla.glu().gluQuadricOrientation(quadric, GLU.GLU_OUTSIDE);
+
+		float thickness=Renderer.covBondThickness;
+		
+		displayList=gla.beginList();
+		
+		gla.setColor(Renderer.oColor);
+		gla.glu().gluCylinder(quadric,thickness,thickness,
+			.5f, Renderer.covBondStacks, Renderer.covBondSlices);
+		
+		gla.setColor(Renderer.hColor);
+		gla.translate(new float[] {0,0,.5f});
+		gla.glu().gluCylinder(quadric,thickness,thickness,
+			.5f, Renderer.covBondStacks, Renderer.covBondSlices);
+		
+		displayList.end();
+		
+		glu.gluDeleteQuadric(quadric);
+
+
+	}
+	public void draw(GLAccess gla) {
+		displayList.call();
+	}
+}

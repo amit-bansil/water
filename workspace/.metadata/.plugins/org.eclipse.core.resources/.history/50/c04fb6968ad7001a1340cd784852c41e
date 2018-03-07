@@ -1,0 +1,14 @@
+/*
+ * CREATED ON:    Apr 28, 2006 4:28:48 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.jarch.gui.resources;
+/**
+ * <p>TODO document ImageLoader
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class ImageLoader {
+
+}

@@ -1,0 +1,14 @@
+/*
+ * CREATED ON:    Apr 19, 2006 11:49:13 AM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.jarch.simulation.snapshot;
+/**
+ * <p>TODO document MultiModelManager
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class MultiModelManager {
+
+}

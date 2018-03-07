@@ -1,0 +1,14 @@
+/*
+ * CREATED ON:    Apr 16, 2006 9:51:54 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.util;
+/**
+ * <p>TODO document Tuple3f
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class Tuple3f {
+
+}

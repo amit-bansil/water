@@ -1,0 +1,342 @@
+import com.sun.opengl.util.BufferUtil;
+import com.sun.opengl.util.FPSAnimator;
+import com.sun.opengl.util.GLUT;
+
+import javax.imageio.ImageIO;
+import javax.media.opengl.DebugGL;
+import javax.media.opengl.GL;
+import javax.media.opengl.GLAutoDrawable;
+import javax.media.opengl.GLCanvas;
+import javax.media.opengl.GLEventListener;
+import javax.media.opengl.glu.GLU;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+public class ScreenCaptureExample extends JFrame implements ActionListener {
+	
+	private GLCanvas canvas;
+
+	// The animator object
+	private FPSAnimator anim;
+	
+	// Frames per second
+	private int fps = 30;
+	
+	// The rotation angle
+	private double angle = 0.0;
+	
+	// Start and stop buttons
+	private JButton startStopButton, captureButton, saveButton;
+	
+	// The BufferedImage for screen capture
+	private BufferedImage image;
+	
+	// The label that contains the screen capture image
+	private JLabel imageLabel;
+	
+	// A flag that indicates a screen shot should be taken
+	private boolean capture;
+	
+	/*
+	 * Depending on the button that was clicked either start or stop the animator,
+	 * set a flag for the screen capture and redisplay, or save the 
+	 * BufferedImage to a file.
+	 */
+	public void actionPerformed( ActionEvent e ) 
+	{
+		Object source = e.getSource();
+		
+		// If the source is the startStopButton, either start or stop
+		// the animator. 
+		if( source == startStopButton ) {
+			if( startStopButton.getText() == "Start") 
+			{
+				anim.start();
+				captureButton.setEnabled(false);
+				startStopButton.setText("Stop");
+			}
+			else if( startStopButton.getText() == "Stop") {
+				anim.stop();
+				captureButton.setEnabled(true);
+				startStopButton.setText("Start");
+			}
+		}
+		
+		// If the source is the capture button, set a flag to capture
+		// the frame buffer on the next redisplay and request a display refresh.
+		else if (source == captureButton ){
+			capture = true;
+			canvas.display();
+			imageLabel.repaint();
+		}
+		
+		// If the source is the saveButton, save the BufferedImage to a 
+		// PNG file.
+		else if (source == saveButton ) {
+			JFileChooser chooser = new JFileChooser();
+			chooser.setDialogTitle("Save PNG File");
+			int result = chooser.showSaveDialog(this);
+			
+			if( result == JFileChooser.APPROVE_OPTION ) {
+				File f = chooser.getSelectedFile();
+				try {
+					ImageIO.write(image, "PNG",f);
+				} catch (IOException ex) {
+					JOptionPane.showMessageDialog(this, "Error saving file: " + ex);
+				}
+			}
+		}
+		
+	}
+	
+	/*
+	 * Create a JFrame with a GLCanvas on the left side and a 
+	 * JLabel on the right.
+	 */
+	public ScreenCaptureExample() 
+	{
+		setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+		
+		JPanel canvasPanel = new JPanel();
+		
+		// Create a GLCanvas object and place into the JFrame
+		canvas = new GLCanvas();
+		canvas.setSize(400,400);
+		canvas.addGLEventListener( new Listener() );
+		canvasPanel.add(canvas);
+		
+		image = new BufferedImage(400,400, BufferedImage.TYPE_INT_ARGB);
+		Graphics g = image.getGraphics();
+		g.setColor(Color.blue);
+		g.fillRect(0,0,400,400);
+		canvasPanel.add(imageLabel = new JLabel(new ImageIcon(image)));
+		
+		getContentPane().add( canvasPanel, BorderLayout.CENTER );
+		
+		JPanel buttonPanel = new JPanel();
+		buttonPanel.add( startStopButton = new JButton("Stop"));
+		startStopButton.addActionListener(this);
+		
+		buttonPanel.add( captureButton = new JButton("Capture"));
+		captureButton.addActionListener(this);
+		captureButton.setEnabled(false);
+		
+		buttonPanel.add( saveButton = new JButton("Save"));
+		saveButton.addActionListener(this);
+		
+		getContentPane().add( buttonPanel, BorderLayout.SOUTH );
+		
+		pack();
+		setVisible( true );
+	
+		capture = false;
+		
+		anim = new FPSAnimator(canvas,fps);
+		anim.start();
+	}
+	
+	/*
+	 * An inner class that is the GLEventListener for the GLCanvas.
+	 */
+	private class Listener implements GLEventListener 
+	{
+		// GLUT object for teapot
+		private final GLUT glut = new GLUT();
+		
+		private final GLU glu = new GLU();
+		
+		/* 
+		 * Set up basic lighting, and turn on depth test.
+		 */
+		public void init( GLAutoDrawable d ) { 
+			d.setGL( new DebugGL( d.getGL()));
+			GL gl = d.getGL();
+			gl.glClearColor( 0,0,0,0 );
+			
+			float[] lightAmbient = {0.4f, 0.4f, 0.4f, 1.0f};
+			float[] lightDiffuse = {0.8f, 0.8f, 0.8f, 1.0f};
+			float[] lightSpecular = {1.0f, 1.0f, 1.0f, 1.0f};
+			float[] lightPosition = {0.0f, 0.0f, 10.0f, 1.0f}; 
+			
+			gl.glLightfv(GL.GL_LIGHT0, GL.GL_AMBIENT, lightAmbient,0);
+			gl.glLightfv(GL.GL_LIGHT0, GL.GL_DIFFUSE, lightDiffuse,0);
+			gl.glLightfv(GL.GL_LIGHT0, GL.GL_SPECULAR, lightSpecular,0);
+			gl.glLightfv(GL.GL_LIGHT0, GL.GL_POSITION, lightPosition,0);
+			
+			gl.glEnable(GL.GL_DEPTH_TEST);
+			gl.glEnable(GL.GL_LIGHT0);
+			gl.glEnable(GL.GL_LIGHTING);
+			gl.glMatrixMode( GL.GL_MODELVIEW );
+			gl.glLoadIdentity();
+		}
+		
+		/* 
+		 * Set up a simple perspective projection, with appropriate aspect ratio.
+		 */
+		public void reshape( GLAutoDrawable d, int x, int y, int width, int height ) { 
+			GL gl = d.getGL();
+			gl.glMatrixMode( GL.GL_PROJECTION );
+			gl.glLoadIdentity();
+			glu.gluPerspective(60.0, (float)width/height, 0.5, 100.0);
+			gl.glMatrixMode( GL.GL_MODELVIEW );
+		}
+		
+		/* 
+		 * Draw the scene.  If the capture flag is set, then copy the pixels
+		 * from the frame buffer into the BufferedImage.
+		 */
+		public void display( GLAutoDrawable d ) { 
+			if( !capture ) {
+				// Update the angle
+				angle += 1.0;
+				if( angle > 180.0 ) angle -= 360.0;
+			}
+			
+			// Draw the frame
+			GL gl = d.getGL();
+			gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
+			gl.glLoadIdentity();
+			glu.gluLookAt(0,2,3,0,1,0,0,1,0);
+			drawFloor(gl,true);
+			gl.glRotated(angle,0,1,0);
+			gl.glTranslated(0,1.0,0);
+			glut.glutSolidTeapot(1.0);
+			gl.glFlush();
+			
+			if( capture ) {
+				captureImage(d);
+				capture = false;
+			}
+		}
+		
+		/*
+		 * Copy the frame buffer into the BufferedImage.  The data needs to
+		 * be flipped top to bottom because the origin is the lower left in
+		 * OpenGL, but is the upper right in Java's BufferedImage format.
+		 */
+		private void captureImage( GLAutoDrawable d )
+		{
+			GL gl = d.getGL();
+			int width = d.getWidth();
+			int height = d.getHeight();
+			
+			// Allocate a buffer for the pixels
+			ByteBuffer rgbData = BufferUtil.newByteBuffer(width * height * 3);
+			
+			// Set up the OpenGL state.
+			gl.glReadBuffer(GL.GL_FRONT);
+			gl.glPixelStorei(GL.GL_PACK_ALIGNMENT, 1);
+
+			// Read the pixels into the ByteBuffer
+			gl.glReadPixels(0,
+					0,
+					width,
+					height,
+					GL.GL_RGB, 
+					GL.GL_UNSIGNED_BYTE,  
+					rgbData);              
+					
+			// Allocate space for the converted pixels
+			int[] pixelInts = new int[width * height];
+
+			// Convert RGB bytes to ARGB ints with no transparency. Flip 
+			// image vertically by reading the rows of pixels in the byte 
+			// buffer in reverse - (0,0) is at bottom left in OpenGL.
+
+			int p = width * height * 3; // Points to first byte (red) in each row.
+			int q;                  	// Index into ByteBuffer
+			int i = 0;                 // Index into target int[]
+			int bytesPerRow = width*3; // Number of bytes in each row
+
+			for (int row = height - 1; row >= 0; row--) {
+				p = row * bytesPerRow;
+				q = p;
+				for (int col = 0; col < width; col++) {
+					int iR = rgbData.get(q++);
+					int iG = rgbData.get(q++);
+					int iB = rgbData.get(q++);
+					
+					pixelInts[i++] = ( (0xFF000000) 
+							| ((iR & 0xFF) << 16) 
+							| ((iG & 0xFF) << 8)
+							| (iB & 0xFF) );
+				}
+			}
+			
+			// Set the data for the BufferedImage
+			image.setRGB(0, 0, width, height, pixelInts, 0, width);
+		}
+		
+		/**
+		 * Draws a tesselated 20 x 20 plane in the x-z plane, centered at the origin, 
+		 * with 2500 quads.
+		 * @param gl a GL object
+		 * @param wireframe whether or not to draw in wireframe
+		 */
+		private void drawFloor(GL gl, boolean wireframe) {
+			int xdivs = 50;
+			int zdivs = 50;
+			double xmin = -10.0, xmax = 10.0;
+			double zmin = -10.0, zmax = 10.0;
+			double x1, x2, y = 0.0, z;
+			double xsize = (xmax - xmin) / xdivs;
+			double zsize = (zmax - zmin) / zdivs;
+			
+			if( wireframe ) {
+				gl.glPushAttrib(GL.GL_LIGHTING_BIT | GL.GL_POLYGON_BIT
+						| GL.GL_COLOR_BUFFER_BIT | GL.GL_TEXTURE_BIT);
+				gl.glDisable(GL.GL_LIGHTING);
+				gl.glDisable(GL.GL_TEXTURE_2D);
+				gl.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_LINE);
+				gl.glColor3f(1.0f,0.2f,0.2f);
+			}
+			
+			for( int i = 0; i < xdivs ; i++ ) {
+				x1 = (i * xsize) + xmin;
+				x2 = ((i+1) * xsize) + xmin;
+				
+				gl.glBegin(GL.GL_QUAD_STRIP);
+				for(int j = 0; j <= zdivs; j++) {
+					z = (j * zsize) + zmin;
+					gl.glVertex3d(x2,y,z);
+					gl.glVertex3d(x1,y,z);
+				}
+				gl.glEnd();
+			}
+			
+			if(wireframe) {
+				gl.glPopAttrib();
+			}
+		}
+
+		public void displayChanged( GLAutoDrawable d, boolean modeChanged, 
+			boolean deviceChanged ) { }
+		
+	}
+
+	
+	public static void main( String[] args ) {
+		new ScreenCaptureExample();
+	}
+}
+   /* GLCapabilities offscreenCaps=new GLCapabilities();
+    offscreenCaps.setDoubleBuffered(false);
+    final GLDrawable drawable =GLDrawableFactoryImpl.getFactoryImpl()
+    	.createOffscreenDrawable(offscreenCaps, new DefaultGLCapabilitiesChooser());
+    drawable.setSize(100, 100);
+    JPanel gradientPanel = createGradientPanel();*/

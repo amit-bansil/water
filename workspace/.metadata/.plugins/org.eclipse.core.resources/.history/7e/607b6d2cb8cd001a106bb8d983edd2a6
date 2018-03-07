@@ -1,0 +1,14 @@
+/*
+ * CREATED ON:    Apr 16, 2006 10:14:36 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.data;
+/**
+ * <p>TODO document DataViewerModel
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class DataViewerModel {
+
+}

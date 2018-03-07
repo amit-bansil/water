@@ -1,0 +1,38 @@
+/*
+ * CREATED ON:    Apr 19, 2006 11:55:04 AM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.jarch.simulation.snapshot;
+
+import java.awt.Image;
+
+import cps.jarch.data.event.tools.SimpleSource;
+import cps.jarch.data.event.tools.SimpleSourceImp;
+import cps.jarch.data.value.tools.RWValueImp;
+
+/**
+ * <p>Model for a single snapshot.
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public abstract class Snapshot {
+	private final RWValueImp<Boolean> checked=new RWValueImp<Boolean>(false,false);
+	private final RWValueImp<String> title=new RWValueImp<String>("",false);
+	public final RWValueImp<Boolean> getChecked() {
+		return checked;
+	}
+	public final RWValueImp<String> getTitle() {
+		return title;
+	}
+	private final SimpleSourceImp thumbnailChangeSource=new SimpleSourceImp(this,"thumbnail");
+	public final SimpleSource getThumbnailChangeSource() {
+		return thumbnailChangeSource;
+	}
+	protected final void sendThumbnailChangedEvent() {
+		thumbnailChangeSource.sendEvent();
+	}
+	public abstract Image getThumbnail(int width,int height);
+	
+	public abstract Snapshot createCopy();
+}

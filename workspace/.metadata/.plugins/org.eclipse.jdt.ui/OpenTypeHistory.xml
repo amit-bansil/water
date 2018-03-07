@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<typeInfoHistroy>
+<typeInfo enclosingTypes="" modifiers="1" name="MiscControlFactory" package="cps.jarch.gui.builder" path="/jarch-gui/src/cps/jarch/gui/builder/MiscControlFactory.java"/>
+<typeInfo enclosingTypes="" modifiers="33" name="GridLayout" package="java.awt" path="C:\Program Files\Java\jdk1.5.0_06\jre\lib\rt.jar|java/awt/GridLayout.class"/>
+<typeInfo enclosingTypes="" modifiers="33" name="BasicTextFieldUI" package="javax.swing.plaf.basic" path="C:\Program Files\Java\jdk1.5.0_06\jre\lib\rt.jar|javax/swing/plaf/basic/BasicTextFieldUI.class"/>
+<typeInfo enclosingTypes="" modifiers="33" name="JTextField" package="javax.swing" path="C:\Program Files\Java\jdk1.5.0_06\jre\lib\rt.jar|javax/swing/JTextField.class"/>
+<typeInfo enclosingTypes="" modifiers="1025" name="LinkAdapter" package="cps.jarch.data.event.tools" path="/jarch-data/src/cps/jarch/data/event/tools/LinkAdapter.java"/>
+<typeInfo enclosingTypes="" modifiers="513" name="Source" package="cps.jarch.data.event.tools" path="/jarch-data/src/cps/jarch/data/event/tools/Source.java"/>
+<typeInfo enclosingTypes="" modifiers="1" name="SourceImp" package="cps.jarch.data.event.tools" path="/jarch-data/src/cps/jarch/data/event/tools/SourceImp.java"/>
+<typeInfo enclosingTypes="" modifiers="1" name="RWFlag" package="cps.jarch.data.value.tools" path="/jarch-data/src/cps/jarch/data/value/tools/RWFlag.java"/>
+<typeInfo enclosingTypes="" modifiers="1025" name="ROFlag" package="cps.jarch.data.value.tools" path="/jarch-data/src/cps/jarch/data/value/tools/ROFlag.java"/>
+<typeInfo enclosingTypes="" modifiers="33" name="EventObject" package="java.util" path="C:\Program Files\Java\jdk1.5.0_06\jre\lib\rt.jar|java/util/EventObject.class"/>
+<typeInfo enclosingTypes="" modifiers="513" name="Described" package="cps.jarch.gui.resources" path="/jarch-gui/src/cps/jarch/gui/resources/Described.java"/>
+<typeInfo enclosingTypes="" modifiers="1" name="DescribedImpl" package="cps.jarch.gui.resources" path="/jarch-gui/src/cps/jarch/gui/resources/DescribedImpl.java"/>
+<typeInfo enclosingTypes="" modifiers="1025" name="AbstractROValue" package="cps.jarch.data.value" path="/jarch-data/src/cps/jarch/data/value/AbstractROValue.java"/>
+<typeInfo enclosingTypes="" modifiers="16" name="Engine" package="cps.water.simulation" path="/water/src/cps/water/simulation/Engine.java"/>
+<typeInfo enclosingTypes="" modifiers="0" name="InputParameters" package="cps.water.simulation" path="/water/src/cps/water/simulation/InputParameters.java"/>
+<typeInfo enclosingTypes="" modifiers="1" name="BoundedValue" package="cps.jarch.data.value.tools" path="/jarch-data/src/cps/jarch/data/value/tools/BoundedValue.java"/>
+<typeInfo enclosingTypes="" modifiers="513" name="Unlinker" package="cps.jarch.data.event" path="/jarch-data/src/cps/jarch/data/event/Unlinker.java"/>
+<typeInfo enclosingTypes="" modifiers="1025" name="DelayedLink" package="cps.jarch.data.event.tools" path="/jarch-data/src/cps/jarch/data/event/tools/DelayedLink.java"/>
+<typeInfo enclosingTypes="" modifiers="1025" name="ValueConnection" package="cps.jarch.data.value.tools" path="/jarch-data/src/cps/jarch/data/value/tools/ValueConnection.java"/>
+<typeInfo enclosingTypes="" modifiers="1025" name="Link" package="cps.jarch.data.event.tools" path="/jarch-data/src/cps/jarch/data/event/tools/Link.java"/>
+<typeInfo enclosingTypes="" modifiers="49" name="Method" package="java.lang.reflect" path="C:\Program Files\Java\jdk1.5.0_06\jre\lib\rt.jar|java/lang/reflect/Method.class"/>
+<typeInfo enclosingTypes="" modifiers="33" name="JPanel" package="javax.swing" path="C:\Program Files\Java\jdk1.5.0_06\jre\lib\rt.jar|javax/swing/JPanel.class"/>
+<typeInfo enclosingTypes="" modifiers="1057" name="JComponent" package="javax.swing" path="C:\Program Files\Java\jdk1.5.0_06\jre\lib\rt.jar|javax/swing/JComponent.class"/>
+<typeInfo enclosingTypes="" modifiers="1" name="StripedPane" package="cps.water" path="/water/src/cps/water/StripedPane.java"/>
+<typeInfo enclosingTypes="" modifiers="33" name="Threading" package="javax.media.opengl" path="/water/lib/jogl/jogl.jar|javax/media/opengl/Threading.class"/>
+<typeInfo enclosingTypes="" modifiers="17" name="EDTWorker" package="cps.jarch.gui.util" path="/jarch-gui/src/cps/jarch/gui/util/EDTWorker.java"/>
+<typeInfo enclosingTypes="" modifiers="513" name="Condition" package="cps.jarch.data.event.tools" path="/jarch-data/src/cps/jarch/data/event/tools/Condition.java"/>
+<typeInfo enclosingTypes="" modifiers="1537" name="Condition" package="java.util.concurrent.locks" path="C:\Program Files\Java\jdk1.5.0_06\jre\lib\rt.jar|java/util/concurrent/locks/Condition.class"/>
+<typeInfo enclosingTypes="" modifiers="33" name="ReentrantLock" package="java.util.concurrent.locks" path="C:\Program Files\Java\jdk1.5.0_06\jre\lib\rt.jar|java/util/concurrent/locks/ReentrantLock.class"/>
+<typeInfo enclosingTypes="" modifiers="1537" name="Lock" package="ca.odell.glazedlists.util.concurrent" path="/jarch-data/lib/glazedlists/glazedlists-1.5.0_java15.jar|ca/odell/glazedlists/util/concurrent/Lock.class"/>
+<typeInfo enclosingTypes="" modifiers="1537" name="Lock" package="java.util.concurrent.locks" path="C:\Program Files\Java\jdk1.5.0_06\jre\lib\rt.jar|java/util/concurrent/locks/Lock.class"/>
+<typeInfo enclosingTypes="" modifiers="17" name="GLWorker" package="cps.water.moleculedisplay" path="/water/src/cps/water/moleculedisplay/GLWorker.java"/>
+<typeInfo enclosingTypes="" modifiers="17" name="OffscreenCanvas" package="cps.water.util" path="/water/src/cps/water/util/OffscreenCanvas.java"/>
+<typeInfo enclosingTypes="" modifiers="1" name="SimModel" package="cps.water.simulation" path="/water/src/cps/water/simulation/SimModel.java"/>
+<typeInfo enclosingTypes="" modifiers="33" name="Window" package="java.awt" path="C:\Program Files\Java\jdk1.5.0_06\jre\lib\rt.jar|java/awt/Window.class"/>
+<typeInfo enclosingTypes="" modifiers="1" name="NumberEditorFactory" package="cps.jarch.gui.builder" path="/jarch-gui/src/cps/jarch/gui/builder/NumberEditorFactory.java"/>
+<typeInfo enclosingTypes="" modifiers="33" name="BasicPopupMenuUI" package="javax.swing.plaf.basic" path="C:\Program Files\Java\jdk1.5.0_06\jre\lib\rt.jar|javax/swing/plaf/basic/BasicPopupMenuUI.class"/>
+<typeInfo enclosingTypes="" modifiers="33" name="JPopupMenu" package="javax.swing" path="C:\Program Files\Java\jdk1.5.0_06\jre\lib\rt.jar|javax/swing/JPopupMenu.class"/>
+<typeInfo enclosingTypes="" modifiers="1025" name="CELESTLook" package="cps.jarch.gui.components" path="/jarch-gui/src/cps/jarch/gui/components/CELESTLook.java"/>
+<typeInfo enclosingTypes="" modifiers="1" name="TimeControls" package="cps.water.time" path="/water/src/cps/water/time/TimeControls.java"/>
+<typeInfo enclosingTypes="" modifiers="33" name="JFrame" package="javax.swing" path="C:\Program Files\Java\jdk1.5.0_06\jre\lib\rt.jar|javax/swing/JFrame.class"/>
+<typeInfo enclosingTypes="" modifiers="1" name="RenderScene" package="cps.water.moleculedisplay" path="/water/src/cps/water/moleculedisplay/RenderScene.java"/>
+<typeInfo enclosingTypes="" modifiers="0" name="AtomsDrawer" package="cps.water.moleculedisplay" path="/water/src/cps/water/moleculedisplay/AtomsDrawer.java"/>
+<typeInfo enclosingTypes="" modifiers="1" name="TimeModel" package="cps.water.time" path="/water/src/cps/water/time/TimeModel.java"/>
+<typeInfo enclosingTypes="" modifiers="1025" name="Application" package="cps.jarch.application" path="/jarch-application/src/cps/jarch/application/Application.java"/>
+<typeInfo enclosingTypes="" modifiers="1" name="Application" package="cps.water" path="/water/src/cps/water/Application.java"/>
+<typeInfo enclosingTypes="" modifiers="0" name="Renderer" package="cps.water.moleculedisplay" path="/water/src/cps/water/moleculedisplay/Renderer.java"/>
+<typeInfo enclosingTypes="" modifiers="1" name="CovBondDrawer" package="cps.water.moleculedisplay" path="/water/src/cps/water/moleculedisplay/CovBondDrawer.java"/>
+<typeInfo enclosingTypes="" modifiers="1" name="DisplayPanel" package="cps.water.moleculedisplay" path="/water/src/cps/water/moleculedisplay/DisplayPanel.java"/>
+<typeInfo enclosingTypes="" modifiers="1" name="AspectLayout" package="cps.jarch.simulation.components" path="/jarch-simulation/src/cps/jarch/simulation/components/AspectLayout.java"/>
+<typeInfo enclosingTypes="" modifiers="1" name="AppModel" package="cps.water" path="/water/src/cps/water/AppModel.java"/>
+<typeInfo enclosingTypes="" modifiers="1025" name="SnapshotsModel" package="cps.jarch.simulation.snapshot" path="/jarch-simulation/src/cps/jarch/simulation/snapshot/SnapshotsModel.java"/>
+<typeInfo enclosingTypes="" modifiers="1" name="SnapshotChooser" package="cps.jarch.simulation.snapshot" path="/jarch-simulation/src/cps/jarch/simulation/snapshot/SnapshotChooser.java"/>
+<typeInfo enclosingTypes="" modifiers="1" name="SimControls" package="cps.water.simulation" path="/water/src/cps/water/simulation/SimControls.java"/>
+<typeInfo enclosingTypes="" modifiers="1" name="RotationBinding" package="cps.water" path="/water/src/cps/water/RotationBinding.java"/>
+<typeInfo enclosingTypes="" modifiers="1" name="GUI" package="cps.water" path="/water/src/cps/water/GUI.java"/>
+<typeInfo enclosingTypes="" modifiers="1" name="ControlFactory" package="cps.water" path="/water/src/cps/water/ControlFactory.java"/>
+<typeInfo enclosingTypes="" modifiers="0" name="GLAccess" package="cps.water.moleculedisplay" path="/water/src/cps/water/moleculedisplay/GLAccess.java"/>
+<typeInfo enclosingTypes="" modifiers="1" name="DisplayModel" package="cps.water.moleculedisplay" path="/water/src/cps/water/moleculedisplay/DisplayModel.java"/>
+<typeInfo enclosingTypes="" modifiers="17" name="DisplayControls" package="cps.water.moleculedisplay" path="/water/src/cps/water/moleculedisplay/DisplayControls.java"/>
+</typeInfoHistroy>

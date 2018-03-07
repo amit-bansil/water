@@ -1,0 +1,115 @@
+/*
+ * CREATED ON:    Apr 16, 2006 10:22:19 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water;
+
+import cps.jarch.simulation.snapshot.Snapshot;
+import cps.jarch.simulation.snapshot.SnapshotsModel;
+import cps.jarch.util.misc.Worker;
+import cps.jarch.util.notes.Constant;
+import cps.water.data.DataViewerModel;
+import cps.water.moleculedisplay.DisplayModel;
+import cps.water.moleculedisplay.GLWorker;
+import cps.water.moleculedisplay.RenderScene;
+import cps.water.moleculedisplay.SnapshotDisplay;
+import cps.water.simulation.SimConfig;
+import cps.water.simulation.SimModel;
+import cps.water.time.TimeModel;
+
+import java.awt.Image;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * <p>
+ * Holds state of entire application. Meant to be accessed by EDT only except
+ * where noted. Handles snapshot logic.
+ * </p>
+ * 
+ * @version $Id$
+ * @author Amit Bansil
+ */
+//TODO IO
+public class AppModel extends SnapshotsModel<AppModel.Model>{
+	//fields
+	private final DataViewerModel dataViewer1Model,dataViewer2Model;
+	private final TimeModel timeModel;
+	
+	//field getters
+	public final DataViewerModel getDataViewer1Model() {
+		return dataViewer1Model;
+	}
+
+	public final DataViewerModel getDataViewer2Model() {
+		return dataViewer2Model;
+	}
+
+	public final TimeModel getTimeModel() {
+		return timeModel;
+	}
+	// ------------------------------------------------------------------------
+	//constructor
+	private final Worker simWorker;
+	public AppModel(Worker simWorker) {
+		this.simWorker=simWorker;
+		dataViewer1Model=new DataViewerModel(snapshots());
+		dataViewer2Model=new DataViewerModel(snapshots());
+		timeModel=new TimeModel();
+	}
+
+	@Override public Model createEmpty() {
+		return new Model(SimConfig.getIce24());
+	}
+
+	public class Model extends Snapshot {
+		private final SimModel simModel;
+		private final DisplayModel display;
+		private final RenderScene renderScene;
+		public final RenderScene getRenderScene() {
+			return renderScene;
+		}
+		public Model(SimConfig intialConfig) {
+			simModel=new SimModel(intialConfig,simWorker);
+			display=new DisplayModel();
+			renderScene=new RenderScene(simModel);
+		}
+		//copy contructor
+		private Model(Model orig) {
+			simModel=new SimModel(orig.simModel);
+			display=new DisplayModel();
+			renderScene=new RenderScene(simModel);
+			display.read(orig.display);
+		}
+		public @Constant final DisplayModel getDisplay() {
+			return display;
+		}
+		public @Constant final SimModel getSimModel() {
+			return simModel;
+		}
+		@Override protected Snapshot createCopy() {
+			return new Model(this);
+		}
+		
+		
+		@Override public Image getThumbnail() {
+			return null;
+		}
+		@Override public void requestUpdateThumbnail(int width, int height) {
+			
+		}
+	}
+	// ------------------------------------------------------------------------
+	//snapshot queue
+	//TODO put this in snapshot display
+	private SnapshotDisplay snapshotDisplay=new SnapshotDisplay(100, 100);
+	private final Set<Model> modelsToUpdate=new HashSet<Model>();
+	private final Runnable takeSnapshot=new Runnable() {
+		public void run() {
+		}
+	};
+	private final void runTake() {
+		GLWorker.getInstance().runConditional(500, TimeUnit.MILLISECONDS, takeSnapshot)
+	}
+}

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<item key="org.eclipse.jdt.internal.debug.ui.actions.PopupDisplayAction$DisplayPopupDIALOG_X_ORIGIN" value="43"/>
+	<item key="org.eclipse.jdt.internal.debug.ui.actions.PopupDisplayAction$DisplayPopupDIALOG_HEIGHT" value="34"/>
+	<item key="org.eclipse.jdt.internal.debug.ui.actions.PopupDisplayAction$DisplayPopupDIALOG_Y_ORIGIN" value="530"/>
+	<item key="org.eclipse.jdt.internal.debug.ui.actions.PopupDisplayAction$DisplayPopupDIALOG_WIDTH" value="194"/>
+	<section name="org.eclipse.debug.ui.SCOPED_SAVE_SELECTION_DIALOG">
+		<item key="DIALOG_X_ORIGIN" value="471"/>
+		<item key="DIALOG_HEIGHT" value="455"/>
+		<item key="DIALOG_Y_ORIGIN" value="213"/>
+		<item key="DIALOG_WIDTH" value="347"/>
+	</section>
+</section>

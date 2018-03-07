@@ -1,0 +1,166 @@
+#
+# An unexpected error has been detected by HotSpot Virtual Machine:
+#
+#  EXCEPTION_ACCESS_VIOLATION (0xc0000005) at pc=0x69338f46, pid=240, tid=604
+#
+# Java VM: Java HotSpot(TM) Client VM (1.5.0_06-b05 mixed mode, sharing)
+# Problematic frame:
+# C  [atioglxx.dll+0x338f46]
+#
+
+---------------  T H R E A D  ---------------
+
+Current thread (0x003665e8):  JavaThread "main" [_thread_in_native, id=604]
+
+siginfo: ExceptionCode=0xc0000005, reading address 0x00039024
+
+Registers:
+EAX=0x00000000, EBX=0x26c4ff20, ECX=0xc5010d2d, EDX=0x00000001
+ESP=0x0006f7bc, EBP=0x0006f7d0, ESI=0x26c4ff20, EDI=0x003665e8
+EIP=0x69338f46, EFLAGS=0x00010212
+
+Top of Stack: (sp=0x0006f7bc)
+0x0006f7bc:   100119e7 00000001 c5010d2d 0006f814
+0x0006f7cc:   69338f40 0006f814 00a8826f 003666a8
+0x0006f7dc:   0006f83c 00000001 00000000 c5010d2d
+0x0006f7ec:   ffffffff 69338f40 00000000 0006f7f8
+0x0006f7fc:   26c4ff20 0006f83c 26c521a0 00000000
+0x0006f80c:   26c4ff20 0006f824 0006f85c 00a829cf
+0x0006f81c:   00000000 00a86449 69338f40 00000000
+0x0006f82c:   c5010d2d ffffffff 00000001 00000000 
+
+Instructions: (pc=0x69338f46)
+0x69338f36:   cc cc cc cc cc cc cc cc cc cc 64 a1 f0 0b 00 00
+0x69338f46:   8b 80 24 90 03 00 ff a0 6c 07 00 00 cc cc cc cc 
+
+
+Stack: [0x00030000,0x00070000),  sp=0x0006f7bc,  free space=253k
+Native frames: (J=compiled Java code, j=interpreted, Vv=VM code, C=native code)
+C  [atioglxx.dll+0x338f46]
+j  com.sun.opengl.impl.windows.WGLExtImpl.dispatch_wglReleasePbufferDCARB0(JJJ)I+0
+j  com.sun.opengl.impl.windows.WGLExtImpl.wglReleasePbufferDCARB(JJ)I+34
+j  com.sun.opengl.impl.windows.WindowsPbufferGLDrawable.destroy()V+23
+j  com.sun.opengl.impl.GLPbufferImpl.destroy()V+11
+j  javax.media.opengl.GLJPanel.handleReshape()V+243
+j  javax.media.opengl.GLJPanel.paintComponent(Ljava/awt/Graphics;)V+27
+j  cps.water.util.JGears.paintComponent(Ljava/awt/Graphics;)V+2
+j  javax.swing.JComponent.paintWithOffscreenBuffer(Ljavax/swing/JComponent;Ljava/awt/Graphics;IIIILjava/awt/Image;)V+197
+j  javax.swing.JComponent.paintDoubleBuffered(Ljavax/swing/JComponent;Ljava/awt/Component;Ljava/awt/Graphics;IIII)Z+131
+j  javax.swing.JComponent.paint(Ljava/awt/Graphics;)V+211
+j  cps.water.util.JGears.main([Ljava/lang/String;)V+85
+v  ~StubRoutines::call_stub
+V  [jvm.dll+0x845a9]
+V  [jvm.dll+0xd9317]
+V  [jvm.dll+0x8447a]
+V  [jvm.dll+0x8b44a]
+C  [javaw.exe+0x14c5]
+C  [javaw.exe+0x3151]
+C  [kernel32.dll+0x16f97]
+
+Java frames: (J=compiled Java code, j=interpreted, Vv=VM code)
+j  com.sun.opengl.impl.windows.WGLExtImpl.dispatch_wglReleasePbufferDCARB0(JJJ)I+0
+j  com.sun.opengl.impl.windows.WGLExtImpl.wglReleasePbufferDCARB(JJ)I+34
+j  com.sun.opengl.impl.windows.WindowsPbufferGLDrawable.destroy()V+23
+j  com.sun.opengl.impl.GLPbufferImpl.destroy()V+11
+j  javax.media.opengl.GLJPanel.handleReshape()V+243
+j  javax.media.opengl.GLJPanel.paintComponent(Ljava/awt/Graphics;)V+27
+j  cps.water.util.JGears.paintComponent(Ljava/awt/Graphics;)V+2
+j  javax.swing.JComponent.paintWithOffscreenBuffer(Ljavax/swing/JComponent;Ljava/awt/Graphics;IIIILjava/awt/Image;)V+197
+j  javax.swing.JComponent.paintDoubleBuffered(Ljavax/swing/JComponent;Ljava/awt/Component;Ljava/awt/Graphics;IIII)Z+131
+j  javax.swing.JComponent.paint(Ljava/awt/Graphics;)V+211
+j  cps.water.util.JGears.main([Ljava/lang/String;)V+85
+v  ~StubRoutines::call_stub
+
+---------------  P R O C E S S  ---------------
+
+Java Threads: ( => current thread )
+  0x02f1a878 JavaThread "AWT-EventQueue-0" [_thread_blocked, id=3028]
+  0x02e97ef8 JavaThread "AWT-Windows" daemon [_thread_in_native, id=2128]
+  0x02e97b10 JavaThread "AWT-Shutdown" [_thread_blocked, id=3096]
+  0x00a53d68 JavaThread "Java2D Disposer" daemon [_thread_blocked, id=312]
+  0x00a1f710 JavaThread "Low Memory Detector" daemon [_thread_blocked, id=1948]
+  0x00a1e380 JavaThread "CompilerThread0" daemon [_thread_blocked, id=2936]
+  0x00a1d6d0 JavaThread "Signal Dispatcher" daemon [_thread_blocked, id=1232]
+  0x009f81e8 JavaThread "Finalizer" daemon [_thread_blocked, id=1464]
+  0x0036fcd0 JavaThread "Reference Handler" daemon [_thread_blocked, id=3652]
+=>0x003665e8 JavaThread "main" [_thread_in_native, id=604]
+
+Other Threads:
+  0x00a183d0 VMThread [id=1924]
+  0x00a1d610 WatcherThread [id=3312]
+
+VM state:not at safepoint (normal execution)
+
+VM Mutex/Monitor currently owned by a thread: None
+
+Heap
+ def new generation   total 576K, used 135K [0x22a80000, 0x22b20000, 0x22f60000)
+  eden space 512K,  23% used [0x22a80000, 0x22a9dba8, 0x22b00000)
+  from space 64K,  25% used [0x22b10000, 0x22b14200, 0x22b20000)
+  to   space 64K,   0% used [0x22b00000, 0x22b00000, 0x22b10000)
+ tenured generation   total 1408K, used 1319K [0x22f60000, 0x230c0000, 0x26a80000)
+   the space 1408K,  93% used [0x22f60000, 0x230a9f70, 0x230aa000, 0x230c0000)
+ compacting perm gen  total 8192K, used 1918K [0x26a80000, 0x27280000, 0x2aa80000)
+   the space 8192K,  23% used [0x26a80000, 0x26c5fa80, 0x26c5fc00, 0x27280000)
+    ro space 8192K,  66% used [0x2aa80000, 0x2afdbcc0, 0x2afdbe00, 0x2b280000)
+    rw space 12288K,  46% used [0x2b280000, 0x2b822060, 0x2b822200, 0x2be80000)
+
+Dynamic libraries:
+0x00400000 - 0x0040c000 	C:\Program Files\Java\jdk1.5.0_06\bin\javaw.exe
+0x7c900000 - 0x7c9b0000 	C:\WINDOWS\system32\ntdll.dll
+0x7c800000 - 0x7c8f4000 	C:\WINDOWS\system32\kernel32.dll
+0x77dd0000 - 0x77e6b000 	C:\WINDOWS\system32\ADVAPI32.dll
+0x77e70000 - 0x77f01000 	C:\WINDOWS\system32\RPCRT4.dll
+0x77d40000 - 0x77dd0000 	C:\WINDOWS\system32\USER32.dll
+0x77f10000 - 0x77f57000 	C:\WINDOWS\system32\GDI32.dll
+0x77c10000 - 0x77c68000 	C:\WINDOWS\system32\MSVCRT.dll
+0x6d6e0000 - 0x6d874000 	C:\Program Files\Java\jdk1.5.0_06\jre\bin\client\jvm.dll
+0x76b40000 - 0x76b6d000 	C:\WINDOWS\system32\WINMM.dll
+0x6d2f0000 - 0x6d2f8000 	C:\Program Files\Java\jdk1.5.0_06\jre\bin\hpi.dll
+0x76bf0000 - 0x76bfb000 	C:\WINDOWS\system32\PSAPI.DLL
+0x6d6b0000 - 0x6d6bc000 	C:\Program Files\Java\jdk1.5.0_06\jre\bin\verify.dll
+0x6d370000 - 0x6d38d000 	C:\Program Files\Java\jdk1.5.0_06\jre\bin\java.dll
+0x6d6d0000 - 0x6d6df000 	C:\Program Files\Java\jdk1.5.0_06\jre\bin\zip.dll
+0x6d070000 - 0x6d1d7000 	C:\Program Files\Java\jdk1.5.0_06\jre\bin\awt.dll
+0x73000000 - 0x73026000 	C:\WINDOWS\system32\WINSPOOL.DRV
+0x76390000 - 0x763ad000 	C:\WINDOWS\system32\IMM32.dll
+0x774e0000 - 0x7761d000 	C:\WINDOWS\system32\ole32.dll
+0x5ad70000 - 0x5ada8000 	C:\WINDOWS\system32\uxtheme.dll
+0x73760000 - 0x737a9000 	C:\WINDOWS\system32\ddraw.dll
+0x73bc0000 - 0x73bc6000 	C:\WINDOWS\system32\DCIMAN32.dll
+0x73940000 - 0x73a10000 	C:\WINDOWS\system32\D3DIM700.DLL
+0x6d2b0000 - 0x6d2ed000 	C:\Program Files\Java\jdk1.5.0_06\jre\bin\fontmanager.dll
+0x74720000 - 0x7476c000 	C:\WINDOWS\system32\MSCTF.dll
+0x7c9c0000 - 0x7d1d6000 	C:\WINDOWS\system32\shell32.dll
+0x77f60000 - 0x77fd6000 	C:\WINDOWS\system32\SHLWAPI.dll
+0x773d0000 - 0x774d3000 	C:\WINDOWS\WinSxS\x86_Microsoft.Windows.Common-Controls_6595b64144ccf1df_6.0.2600.2649_x-ww_aac16c8b\comctl32.dll
+0x5d090000 - 0x5d12a000 	C:\WINDOWS\system32\comctl32.dll
+0x10000000 - 0x10047000 	C:\Documents and Settings\Amit Bansil\workspace\water\lib\jogl\jogl.dll
+0x5ed00000 - 0x5edcc000 	C:\WINDOWS\system32\OPENGL32.dll
+0x68b20000 - 0x68b40000 	C:\WINDOWS\system32\GLU32.dll
+0x69000000 - 0x694d7000 	C:\WINDOWS\system32\atioglxx.dll
+
+VM Arguments:
+jvm_args: -Djava.library.path=C:\Documents and Settings\Amit Bansil\workspace\water\lib\jogl
+java_command: cps.water.util.JGears
+Launcher Type: SUN_STANDARD
+
+Environment Variables:
+CLASSPATH=C:\Program Files\Java\jre1.5.0_06\lib\ext\QTJava.zip
+PATH=C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\Program Files\ATI Technologies\ATI Control Panel;C:\Program Files\QuickTime\QTSystem\;C:\Program Files\svn-win32-1.3.1\bin\;C:\Program Files\Common Files\Adobe\AGL
+USERNAME=Amit Bansil
+OS=Windows_NT
+PROCESSOR_IDENTIFIER=x86 Family 6 Model 14 Stepping 8, GenuineIntel
+
+
+
+---------------  S Y S T E M  ---------------
+
+OS: Windows XP Build 2600 Service Pack 2
+
+CPU:total 2 family 6, cmov, cx8, fxsr, mmx, sse, sse2, ht
+
+Memory: 4k page, physical 1032468k(292064k free), swap 1459536k(780740k free)
+
+vm_info: Java HotSpot(TM) Client VM (1.5.0_06-b05) for windows-x86, built on Nov 10 2005 11:12:14 by "java_re" with MS VC++ 6.0
+

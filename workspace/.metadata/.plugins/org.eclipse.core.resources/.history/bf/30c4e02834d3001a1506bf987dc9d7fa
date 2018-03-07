@@ -1,0 +1,33 @@
+/*
+ * CREATED ON:    Apr 19, 2006 2:37:26 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.util;
+/**
+ * <p>TODO document FinalTuple3f
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class FinalTuple3f {
+	private final float x,y,z;
+
+	public FinalTuple3f(final float x, final float y, final float z) {
+		super();
+		this.x = x;
+		this.y = y;
+		this.z = z;
+	}
+
+	public final float getX() {
+		return x;
+	}
+
+	public final float getY() {
+		return y;
+	}
+
+	public final float getZ() {
+		return z;
+	}
+}

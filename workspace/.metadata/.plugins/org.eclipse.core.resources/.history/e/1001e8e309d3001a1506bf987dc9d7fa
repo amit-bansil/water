@@ -1,0 +1,346 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:08:41 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.simulation;
+
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import cps.jarch.data.event.Source;
+import cps.jarch.data.event.tools.SimpleSource;
+import cps.jarch.data.event.tools.SimpleSourceImp;
+import cps.jarch.data.value.RWValue;
+import cps.jarch.data.value.tools.BoundedValue;
+import cps.jarch.data.value.tools.RWFlag;
+import cps.jarch.data.value.tools.RWValueImp;
+import cps.jarch.util.collections.ArrayFinal;
+import cps.jarch.util.misc.Worker;
+import cps.jarch.util.notes.Nullable;
+import cps.water.util.Tuple3f;
+
+//threading:
+//RWValue/BoundedValues modifiable on any thread
+//step/clear/load/save/insertIon/removeIon return immediatly but execute on SimModel worker thread
+//all getXXX methods (except getChangeSource) are accessible only from SimModel worker thread
+//listeners to change source are notified on simModel worker thread
+/**
+ * <p>TODO document SimModel
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class SimModel {
+	private final Engine raw=new Engine();
+	private final ReadWriteLock lock=new ReentrantReadWriteLock();
+	
+	private static final Worker worker=new Worker();
+	
+	// ------------------------------------------------------------------------
+
+	private int frameNumber;
+	private int nextRecord;
+	public final int getFrameNumber() {
+		return frameNumber;
+	}
+
+	public Tuple3f getBoundsSize() {
+		return new Tuple3f((float) raw.bx, (float) raw.by, (float) raw.bz);
+	}
+
+	// ------------------------------------------------------------------------
+	//atoms
+	public static final int O_ATOM_NUMBER = 2, H1_ATOM_NUMBER = 0, H2_ATOM_NUMBER = 1;
+
+	public final void getAtomPosition(int moleculeNumber, int atomNumber, float[] dst,
+			int dstStart) {
+		dst[dstStart] = raw.rn[moleculeNumber][0][atomNumber];
+		dst[dstStart] = raw.rn[moleculeNumber][1][atomNumber];
+		dst[dstStart] = raw.rn[moleculeNumber][2][atomNumber];
+	}
+
+	private int atomCount;
+
+	public final int getAtomCount() {
+		return atomCount;
+	}
+
+	//velocity/energy
+	public final void getAtomVelocity(int moleculeNumber, int atomNumber, double[] dst,
+			int dstStart) {
+		dst[dstStart] = raw.ve[moleculeNumber][0][atomNumber];
+		dst[dstStart] = raw.ve[moleculeNumber][1][atomNumber];
+		dst[dstStart] = raw.ve[moleculeNumber][2][atomNumber];
+	}
+
+	public final float getAtomKineticEnergy(int moleculeNumber, int atomNumber) {
+		return (float) Math.sqrt(raw.ve[moleculeNumber][0][atomNumber]
+				* raw.ve[moleculeNumber][0][atomNumber]
+				+ raw.ve[moleculeNumber][1][atomNumber]
+				* raw.ve[moleculeNumber][1][atomNumber]
+				+ raw.ve[moleculeNumber][2][atomNumber]
+				* raw.ve[moleculeNumber][2][atomNumber]);
+	}
+
+	public final double getMoleculePotentialEnergy(int moleculeNumber) {
+		return raw.potH2O[moleculeNumber];
+	}
+
+	// ------------------------------------------------------------------------
+	//bonds
+	public final void getHBondSrcPosition(int bondNumber, float[] dst, int dstStart) {
+		int srcMolNum = raw.indxww[bondNumber][0];
+		getAtomPosition(srcMolNum, O_ATOM_NUMBER, dst, dstStart);
+	}
+
+	public final void getHBondDstPosition(int bondNumber, float[] dst, int dstStart) {
+		int dstMolNum = raw.indxww[bondNumber][1];
+		int dstAtomNum = raw.indxww[bondNumber][2];
+		getAtomPosition(dstMolNum, dstAtomNum, dst, dstStart);
+	}
+
+	private int hBondCount;
+
+	public int getHBondCount() {
+		return raw.hbonds;
+	}
+
+	// ------------------------------------------------------------------------
+	//ions
+	private int oldLatRes = -1;
+
+	private double oldCut = -1, oldFNum = -1;
+
+	private PELandscapeCalculator landCalc = null;
+
+	public int[] generatePeMatrix(ArrayFinal<Ion> ions, int latRes, double cut, float x) {
+		if (landCalc == null || oldLatRes != latRes || oldCut != cut)
+			landCalc = new PELandscapeCalculator(latRes, cut);
+		if (oldFNum != getFrameNumber()) {
+			landCalc.readEngineState(raw);
+			oldFNum = getFrameNumber();
+		}
+		landCalc.generatePELandscape(ions, x);
+		return landCalc.getLandscape();
+	}
+
+	public @Nullable ArrayFinal<Ion> getIons() {
+		return raw.ions;
+	}
+
+	public void removeIons() {
+		raw.remove_ion();
+	}
+
+	public void insertIons(@Nullable ArrayFinal<Ion> ions) {
+		raw.insert_ion(ions);
+	}
+
+	public void insertIons(@Nullable ArrayFinal<Ion> ions, Tuple3f position) {
+		raw.insert_ion(ions, position.x, position.y, position.z);
+	}
+
+	public final void getIonPosition(int moleculeNumber, float[] dst, int dstStart) {
+		dst[dstStart] = (float) raw.xni[moleculeNumber];
+		dst[dstStart + 1] = (float) raw.yni[moleculeNumber];
+		dst[dstStart + 2] = (float) raw.zni[moleculeNumber];
+	}
+
+	// ------------------------------------------------------------------------
+	// parameters
+	private static abstract class DataSet {
+		private final String name;
+
+		public DataSet(String name) {
+			this.name = name;
+		}
+
+		@Override public final String toString() {
+			return name;
+		}
+
+		public abstract float getValue(SimModel m);
+	}
+	
+	private final ArrayFinal<DataSet> dataSets = ArrayFinal.create(
+		new DataSet("Temperature") {
+			@Override public float getValue(SimModel m) {return (float)raw.temp;}},
+		new DataSet("Density") {
+			@Override public float getValue(SimModel m) {return (float)raw.rho;}},
+		new DataSet("Pressure") {
+			@Override public float getValue(SimModel m) {return (float)raw.temp;}},
+		new DataSet("Potential Energy") {
+			@Override public float getValue(SimModel m) {return (float)raw.epot;}},
+		new DataSet("Kinetic Energy") { 
+			@Override public float getValue(SimModel m) {return (float)raw.ekin;}},
+		new DataSet("Total Energy") { 
+			@Override public float getValue(SimModel m) {return (float)raw.eges;}},
+		new DataSet("Volume") { 
+			@Override public float getValue(SimModel m) {return (float)(raw.bx*raw.by*raw.bz);}},
+		new DataSet("Time") { 
+			@Override public float getValue(SimModel m) {return getFrameNumber();}}
+	);
+	
+	private final CursorableLinkedList recordings=new CursorableLinkedList();
+	
+	// ------------------------------------------------------------------------
+	// input parameters
+	
+	enum Mode {
+		KPresKTemp, KDensKTemp, KPresKEn, KDensKEn
+	}
+
+	private final RWValue<Mode> mode=new RWValueImp<Mode>(Mode.KPresKTemp,false,lock);
+	private final BoundedValue<Float> desiredTemperature=new BoundedValue<Float>(1f,1f,1000f,lock);
+	private final BoundedValue<Float> desiredPressure=new BoundedValue<Float>(1f,-1000f,1000f,lock);
+	private final BoundedValue<Float> desiredDensity=new BoundedValue<Float>(.5f,.001f,.99999f,lock);
+	private final BoundedValue<Integer> stepSize=new BoundedValue<Integer>(5,1,100,lock);
+	private final BoundedValue<Integer> recordStepSize=new BoundedValue<Integer>(5,1,500,lock);
+	private final RWFlag running=new RWFlag(false);//not locked since it's never read
+	
+	
+	public final BoundedValue<Integer> stepSize(){
+		return stepSize;
+	}
+	public final BoundedValue<Integer> recordStepSize(){
+		return recordStepSize;
+	}
+	public final BoundedValue<Float> desiredDensity(){
+		return desiredDensity;
+	}
+	public final BoundedValue<Float> desiredPressure(){
+		return desiredPressure;
+	}
+	public final BoundedValue<Float> desiredTemperature(){
+		return desiredTemperature;
+	}
+	public final RWValue<Mode> mode(){
+		return mode;
+	}
+
+	
+	// ------------------------------------------------------------------------
+
+	public SimModel(SimConfig initialConfig) {
+		this.initialConfig = initialConfig;
+		clear();
+	}
+
+	private SimConfig initialConfig;
+
+	private Mode oldMode;
+	private float oldTemp,oldPres,oldDens;
+	public static abstract interface ShakeFailHook{
+		public void shakeFailed(ShakeFailException e);
+	}
+	public void step(ShakeFailHook failHook) {
+		worker.runASAP(stepR);
+	}
+	private final Runnable stepR=new Runnable() {
+		public final void run() {
+			_step();
+		}
+	};
+	private final void _step()throws ShakeFailException{
+		//apply parameters
+		int steps,recordStep;
+		lock.readLock().lock();
+		try {
+			steps=stepSize.get();
+			recordStep=recordStepSize.get();
+			if(oldMode!=mode.get()) {
+				switch (mode.get()) {
+					case KPresKTemp: // '\0'
+						raw.kpres = true;
+						raw.ktemp = true;
+						break;
+	
+					case KDensKTemp: // '\001'
+						raw.kpres = false;
+						raw.ktemp = true;
+						break;
+	
+					case KPresKEn: // '\002'
+						raw.kpres = true;
+						raw.ktemp = false;
+						break;
+	
+					case KDensKEn: // '\003'
+						raw.kpres = false;
+						raw.ktemp = false;
+						break;
+				}
+				oldMode=mode.get();
+			}
+			if(raw.ktemp) {
+				if(oldTemp!=desiredTemperature.get()) {
+					oldTemp=desiredTemperature.get();
+					raw.setemperature(oldTemp);
+				}
+			}
+			if(raw.kpres) {
+				if(oldPres!=desiredPressure.get()) {
+					oldPres=desiredPressure.get();
+					raw.setpressure(oldPres);
+				}
+			}else {//kdens
+				if(oldDens!=desiredDensity.get()) {
+					oldDens=desiredDensity.get();
+					raw.setdensity(oldDens);
+				}
+			}
+		}finally {
+			lock.readLock().unlock();
+		}
+		for(int i=0;i<steps;i++) {
+			raw.step();
+			frameNumber++;
+			if(frameNumber==nextRecord) {
+				for(DataSet d:dataSets)d.record();
+				nextRecord+=recordStep;
+			}
+		}
+
+		hBondCount = raw.hbonds;
+		
+	}
+	public static final int DEFAULT_RECORD_COUNT=200;
+	
+	public void clear() {
+		nextRecord=frameNumber=0;
+		raw.clear();
+		removeIons();
+		initialConfig.toData(raw);
+		raw.initial();
+		raw.tempav = raw.atemp;
+		raw.presav = raw.apres;
+		raw.rho = raw.arho;
+		hBondCount=raw.hbonds = 0;
+		// ObjLib.boundsSize = getBoundsSize();
+		//if (initialConfig != null) initialConfig.toData(raw);
+		atomCount = raw.mols;
+		lock.writeLock().lock();
+		try {
+			//clearParameters
+			oldTemp=(float)raw.etemp;desiredTemperature.setUnchecked(oldTemp);
+			oldPres=(float)raw.epres;desiredPressure.setUnchecked(oldPres);
+			oldDens=(float)raw.erho;desiredDensity.setUnchecked(oldDens);
+			oldMode=Mode.KPresKTemp;mode.set(oldMode);
+			
+			//clear data
+			for(DataSet d:dataSets) {
+				d.clear(DEFAULT_RECORD_COUNT);
+			}
+		}finally {
+			lock.writeLock().unlock();
+		}
+	}
+	
+	// ------------------------------------------------------------------------
+	private final SimpleSourceImp source=new SimpleSourceImp(this);
+	public final SimpleSource getChangeSource() {
+		return source;
+	}
+}

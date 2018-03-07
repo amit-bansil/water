@@ -1,0 +1,183 @@
+/*
+ * AbstractBoundPropertyRW.java
+ * CREATED:    Apr 15, 2005 4:42:10 AM
+ * AUTHOR:     Amit Bansil
+ * PROJECT:    celest-framework-event
+ * 
+ * Copyright 2005 The Center for Polymer Studies,
+ * Boston University, all rights reserved.
+ * */
+package cps.jarch.data.value.tools;
+
+import cps.jarch.data.event.GenericLink;
+import cps.jarch.data.io.ObjectInputStreamEx;
+import cps.jarch.data.io.ObjectOutputStreamEx;
+import cps.jarch.data.io.SaveableData;
+import cps.jarch.data.io.SaveableDataProxy;
+import cps.jarch.data.value.AbstractROValue;
+import cps.jarch.data.value.CheckedValue;
+import cps.jarch.data.value.RejectedValueException;
+import cps.jarch.util.misc.LangUtils;
+import cps.jarch.util.notes.Nullable;
+
+import java.io.IOException;
+import java.util.EventObject;
+import java.util.concurrent.locks.Lock;
+/**
+ * Basic <code>CheckedValue</code> implementation
+ * 
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public abstract class CheckedValueImp<T> extends AbstractROValue<T> implements
+		CheckedValue<T>,SaveableDataProxy {
+	/**
+	 * creates AbstractBoundPropertyRW.
+	 * 
+	 * @param lock
+	 *            if specified will be acquired for all read/write operations.
+	 *            If <code>null</code> it is ignored.
+	 * @throws Error
+	 *             if <code>defaultValue</code> does not satisfy
+	 *             <code>check</code>.
+	 */
+	public CheckedValueImp(boolean allowsNull,@Nullable Lock lock) {
+		super(allowsNull,lock);
+	}
+
+	private T value = null;
+	/**
+	 * @throws RejectedValueException
+	 *             if <code>newValue</code> is not acceptable. This method
+	 *             should be consistent, i.e. if for any instance of the object
+	 *             it rejects a value at one time it should reject it at any
+	 *             other time. For example, if validating the value against a
+	 *             upper and lower limits, those limits should be final fields.
+	 */
+	protected abstract void check(T newValue) throws RejectedValueException ;
+	
+	public void checkedSet(T newValue) throws RejectedValueException {
+		if (!isNullable()) LangUtils.checkArgNotNull(newValue);
+		check(newValue);
+		if(getLock()==null) {
+			if (!LangUtils.equals(value, newValue)) {
+				//fire only on change
+				value = newValue;
+				fireChange();
+			}
+		}else {
+			getLock().lock();
+			try {
+				if (!LangUtils.equals(value, newValue)) {
+					//fire only on change
+					T oldValue = value;
+					value = newValue;
+					//we keep lock for a little longer than absolutely needed since
+					//listeners will almost certainly read this
+					fireChange();
+				}
+			}finally{
+				getLock().unlock();
+			}
+		}
+	}
+	/**
+	 * performs checkedSet(newValue) assuming that <code>newValue</code> is
+	 * acceptable. This is a shorthand.
+	 * 
+	 * @throws Error
+	 *             if <code>newValue</code> is not acceptable
+	 */
+	public void setUnchecked(T newValue) {
+		try {
+			checkedSet(newValue);
+		} catch (RejectedValueException e) {
+			//should not happen
+			throw new Error(e);
+		}
+	}
+	public final T get() {
+		if(getLock()!=null) {
+			T ret;
+			getLock().lock();
+			ret=value;
+			getLock().unlock();
+			return ret;
+		}else return value;
+	}
+
+	/**
+	 * Sets current value to defaultValue and makes it the initial valued used
+	 * for IO operations. Meant to be called by constructors.
+	 * 
+	 * @throws Error
+	 *             if this cannot be set to defaultValue because it does not
+	 *             pass one of the filters.
+	 * 
+	 */
+	protected void setInitial(T defaultValue) {
+		try {
+			checkedSet(defaultValue);
+		} catch (RejectedValueException e) {
+			throw new Error("invalid default value",e);
+		}
+		makeCurrentInitial();
+	}
+	
+	// ------------------------------------------------------------------------
+	// IO
+	// ------------------------------------------------------------------------
+	
+	private final SaveableData data = new SaveableData() {
+		public final void write(ObjectOutputStreamEx out) throws IOException {
+			// OPTIMIZE fast handling of primitives
+			out.writeObject(get());
+		}
+
+		@SuppressWarnings("unchecked")
+		public final void read(ObjectInputStreamEx in) throws IOException {
+			try {
+				// unsafe conversion
+				try {
+					checkedSet((T) in.readObject());
+				} catch (RejectedValueException e) {
+					IOException ex= new IOException("rejected input value");
+					ex.initCause(e);
+					throw ex;
+				}
+			} catch (ClassNotFoundException e) {
+				// should not happen
+				throw new Error(e);
+			}
+
+		}
+		public void loadInitial() {
+			try {
+				checkedSet(initial);
+			} catch (RejectedValueException e) {
+				//should not happen, initial values are
+				//checked against the filter on creation
+				throw new Error(e);
+			}
+		}
+
+		public void connect(GenericLink<? super EventObject> l) {
+			CheckedValueImp.this.connect(l);
+		}
+
+		public void disconnect(GenericLink<? super EventObject> l) {
+			CheckedValueImp.this.disconnect(l);
+		}
+	};
+
+	public final SaveableData getData() {
+		return data;
+	}
+
+	private T initial;
+
+	public final void makeCurrentInitial() {
+		initial = get();
+	}
+
+}

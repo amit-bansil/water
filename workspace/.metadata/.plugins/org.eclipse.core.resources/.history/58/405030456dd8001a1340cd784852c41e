@@ -1,0 +1,30 @@
+/*
+ * CREATED ON:    Apr 15, 2006 5:45:32 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.jarch.simulation.snapshot;
+
+import cps.jarch.simulation.components.AspectLayout;
+
+import javax.swing.JComponent;
+
+
+/**
+ * <p>TODO document SnapshotChooser
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class SnapshotChooser {
+	private final JComponent panel;
+	private final AspectLayout layout;
+	private final 
+	public SnapshotChooser(SnapshotsModel model) {
+		panel=new JPanel(layout);
+	}
+
+	public JComponent getComponent() {
+		return panel;
+	}
+
+}

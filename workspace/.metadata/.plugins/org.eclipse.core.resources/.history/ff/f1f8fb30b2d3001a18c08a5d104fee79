@@ -1,0 +1,14 @@
+/*
+ * CREATED ON:    Apr 24, 2006 12:48:12 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+/**
+ * <p>TODO document Camera
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class Camera {
+	public final void 
+}

@@ -1,0 +1,18 @@
+/*
+ * CREATED ON:    Apr 19, 2006 11:55:04 AM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.jarch.simulation.snapshot;
+
+import java.awt.Image;
+
+import cps.jarch.data.event.tools.SimpleSource;
+import cps.jarch.data.event.tools.SimpleSourceImp;
+import cps.jarch.data.value.tools.RWValueImp;
+
+/**
+ * <p>Model for a single snapshot.
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */

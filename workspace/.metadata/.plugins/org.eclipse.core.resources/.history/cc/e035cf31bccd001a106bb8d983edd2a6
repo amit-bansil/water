@@ -1,0 +1,14 @@
+/*
+ * CREATED ON:    Apr 16, 2006 10:41:52 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.jarch.data.collections;
+/**
+ * <p>TODO document ListItem
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class ListItem {
+
+}

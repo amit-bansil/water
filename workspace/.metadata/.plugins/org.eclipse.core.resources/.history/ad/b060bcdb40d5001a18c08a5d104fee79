@@ -1,0 +1,139 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:08:41 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.simulation;
+
+import cps.jarch.data.value.tools.BoundedValue;
+import cps.jarch.util.misc.Worker;
+
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+
+/**
+ * <p>TODO document SimModel
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class SimModel {
+	private final Engine raw=new Engine();
+	private final ReentrantReadWriteLock lock=new ReentrantReadWriteLock();
+	// ------------------------------------------------------------------------
+
+	private final Scene scene=new Scene(raw);
+
+	private final InputParameters inputParameters=new InputParameters(lock);
+
+	private final Output outputParameters=new Output(lock);
+
+	//accessible from any thread
+	public final InputParameters getInputParameters() {
+		return inputParameters;
+	}
+	//accessible from any thread
+	public final Output.Options getOutputOptions() {
+		return outputParameters.options;
+	}
+	//accessible from worker only
+	public final Output.Recordings getOutputRecordings() {
+		return outputParameters.recordings;
+	}
+	//accessible from worker only
+	public final Scene getScene() {
+		worker.checkWorkerRunning();
+		return scene;
+	}
+	
+	// ------------------------------------------------------------------------
+	//time
+	private final BoundedValue<Integer> stepSize=new BoundedValue<Integer>(5,1,100,lock);
+	//accessible from any thread
+	public final BoundedValue<Integer> stepSize(){
+		return stepSize;
+	}
+	private int frameNumber;
+	//accessible from any thread
+	public final int getFrameNumber() {
+		return frameNumber;
+	}
+
+	// ------------------------------------------------------------------------
+	private final Worker worker;
+	
+	public SimModel(SimConfig initialConfig,Worker worker) {
+		this.initialConfig = initialConfig;
+		this.worker=worker;
+		//ok on any thread since we're not live yet
+		clear();
+	}
+
+	//copy contructor
+	public SimModel(SimModel orig) {
+		FullConfig tempConfig=new FullConfig();
+		tempConfig.fromData(orig.raw);
+		tempConfig.toData(raw);
+		worker=orig.worker;
+		frameNumber=orig.frameNumber;
+		
+	}
+
+	private SimConfig initialConfig;
+
+	//accessible from any thread
+	public void abortStep() {
+		abortStep=true;
+	}
+	private boolean abortStep=false;
+
+	//accessible from worker only
+	public void step() throws ShakeFailException {
+		worker.checkWorkerRunning();
+		
+		abortStep=false;
+		final int steps;
+		lock.readLock().lock();
+		try {
+			steps = stepSize.get();
+			outputParameters.preStep();
+			inputParameters.apply(raw);
+		} finally {
+			lock.readLock().unlock();
+		}
+		for (int i = 0; i < steps&&!abortStep; i++) {
+			raw.step();
+			frameNumber++;
+			outputParameters.step(raw);
+		}
+		outputParameters.postStep();
+	}
+	//accessible from worker only
+	public void clear() {
+		worker.checkWorkerRunning();
+		_clear();
+	}
+	private void _clear() {
+		raw.clear();
+		scene.removeIons();
+		initialConfig.toData(raw);
+		raw.initial();
+		raw.tempav = raw.atemp;
+		raw.presav = raw.apres;
+		raw.rho = raw.arho;
+		raw.hbonds = 0;
+		// ObjLib.boundsSize = getBoundsSize();
+		//if (initialConfig != null) initialConfig.toData(raw);
+		lock.writeLock().lock();
+		try {
+			frameNumber=0;
+			//clearParameters
+			stepSize.getData().loadInitial();
+			inputParameters.clear(raw);
+			outputParameters.clear();
+		}finally {
+			lock.writeLock().unlock();
+		}
+	}
+	
+
+}

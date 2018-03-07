@@ -1,0 +1,56 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:05:59 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import cps.jarch.gui.util.ComponentProxy;
+import cps.jarch.util.notes.Nullable;
+
+import javax.swing.Box;
+import javax.swing.JComponent;
+
+/**
+ * <p>A {@link ComponentProxy} that edits a {@link DisplayModel}.
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public final class DisplayControls implements ComponentProxy{
+	private final JComponent panel;
+	public final JComponent getComponent() {
+		return panel;
+	}
+	
+	public DisplayControls() {
+		super();
+		panel=Box.createHorizontalBox();
+	}
+
+	private DisplayModel model;
+	/**
+	 * @return the model being edited by these controls or <code>null</code> if none.
+	 */
+	public @Nullable DisplayModel getModel() {
+		return model;
+	}
+
+	/**
+	 * first unlinks this editor from the current model returned by
+	 * <code>getModel()</code> and then links it too the specified
+	 * <code>newModel</code> if it is not <code>null</code>.
+	 */
+	public void setModel(@Nullable DisplayModel newModel) {
+		if(model!=null)
+			unlinkModel(model);
+	
+		this.model = newModel;
+		
+		if(newModel!=null) linkModel(newModel);
+	}
+	private void linkModel(DisplayModel newModel) {
+	}
+
+	private void unlinkModel(DisplayModel model2) {
+	}
+}

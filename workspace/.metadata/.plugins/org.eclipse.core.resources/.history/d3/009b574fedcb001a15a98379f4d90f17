@@ -1,0 +1,81 @@
+/*
+ * CREATED ON:    Dec 4, 2005 12:17:45 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.jarch.gui.resources;
+
+import cps.jarch.util.misc.LangUtils;
+import cps.jarch.util.misc.LogEx;
+import cps.jarch.util.notes.Nullable;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.Enumeration;
+
+/**
+ * <p>
+ * Utilities for finding resources on the class path. Resources are identified
+ * as paths composed of names separated by <code>SEPARATOR_CHAR</code>. All
+ * paths are generally treated as absolute and should not be preceded by a
+ * <code>SEPARATOR_CHAR</code>.
+ * </p>
+ * 
+ * @version $Id: ResourceResolver.java 78 2005-12-28 22:30:33Z bansil $
+ * @author Amit Bansil
+ */
+public class ResourceResolver {
+	private static final LogEx<ResourceResolver> log = LogEx
+		.createClassLog(ResourceResolver.class);
+	/**
+	 * character for separating elements of a resource's path.
+	 */
+	public static final char SEPARATOR_CHAR = '/';
+	/**
+	 * @return path for finding resources associated with the package of class
+	 *         <code>c</code>. No trailing or leading separator.
+	 */
+	public static final String getPackagePath(Class c) {
+		return c.getPackage().getName().replace('.', SEPARATOR_CHAR);
+	}
+	/**
+	 * @return path for finding resources associated with class <code>c</code>.
+	 *         No trailing or leading separator.
+	 */
+	public static final String getClassPath(Class c) {
+		return c.getName().replace('.', SEPARATOR_CHAR);
+	}
+	
+	public static final @Nullable URL defaultFindResource(String basePath,String name) {
+		return defaultFindResource(basePath+SEPARATOR_CHAR+name);
+	}
+	/**
+	 * @return URL for accessing resource specified by <code>fullPath</code>.
+	 *         If multiple resources exist for that name 1 is arbitrarily selected and
+	 *         a warning is output. If an <code>IOException</code> occurs while 
+	 *         loading the resource it is logged and <code>null</code> is returned. If 
+	 *         no resource is found for that name <code>null</code> is returned.
+	 */
+	public static final @Nullable URL defaultFindResource(String fullPath) {
+		log.debugEnterStatic("fullPath", fullPath);
+		LangUtils.checkArgNotNull(fullPath);
+		try {
+			Enumeration<URL> ret = ResourceResolver.class.getClassLoader().getResources(
+				fullPath);
+
+			// OPTIMIZED for length==0||length==1
+			if (ret == null || !ret.hasMoreElements()) return null;
+			URL first = ret.nextElement();
+			if (!ret.hasMoreElements()) return first;
+			else {
+				// TODO clearer error
+				log.warning(null, "'{0}' is ambiguous, resolves to '{1}' and '{2}'",
+					fullPath, ret.nextElement(), first);
+				return first;
+			}
+		} catch (IOException e) {
+			log.warning(null, "IOException while finding resource: {0}", e, fullPath);
+			return null;
+		}
+	}
+
+}

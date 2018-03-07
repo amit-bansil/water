@@ -1,0 +1,61 @@
+/*
+ * CREATED ON:    Apr 20, 2006 12:47:27 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.simulation;
+
+import cps.jarch.data.DataUtils;
+import cps.jarch.data.event.Unlinker;
+import cps.jarch.data.event.tools.Link;
+import cps.jarch.data.value.ROValue;
+import cps.water.Model;
+
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JSpinner;
+
+/**
+ * <p>TODO document SimulationController
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class SimControls {
+	//provides access to SimControls.properties
+	private static final cps.jarch.gui.resources.MessageBundle res = cps.jarch.gui.resources.MessageBundle
+		.create(SimControls.class);
+	public SimControls(final ROValue<Model> focusedSelection) {
+		DataUtils.linkAndSync(focusedSelection,new Link() {
+			@Override public void signal() {
+				 Model m=focusedSelection.get();
+				 if(target!=null)unlink();
+				 if(m!=null)link(m);
+			}
+		});
+	}
+
+	private final JComponent c;
+
+	public JComponent getComponent() {
+		return c;
+	}
+	
+	private Model target;
+	private Unlinker aLink,bLink,modeLink;
+	private final JComboBox modeCombo;
+	private final JLabel aLabel,bLabel;
+	private final JSpinner aSpinner,bSpinner;
+	private final void link(Model m) {
+		assert target==null;
+		InputParameters input=m.getSimModel().getInputParameters();
+		
+	}
+	private final void unlink() {
+		target=null;
+		if(aLink!=null)aLink.unlink();
+		if(bLink!=null)bLink.unlink();
+		if(modeLink!=null)modeLink.unlink();
+		modeLink=aLink=bLink=null;
+	}
+}

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<session version="1.0">
+<refactoring description="Rename package 'icons' to 'images'" flags="589830" hierarchical="false" id="org.eclipse.jdt.ui.rename.package" input="/src&lt;icons" name="images" qualified="false" references="true" stamp="1146512889218" textual="false" version="1.0"/>
+<refactoring description="Rename type 'cps.water.simulation.Scene' to 'SimScene'" flags="589830" id="org.eclipse.jdt.ui.rename.type" input="/src&lt;cps.water.simulation{Scene.java[Scene" matchStrategy="1" name="SimScene" qualified="false" references="true" similarDeclarations="false" stamp="1146616210453" textual="false" version="1.0"/>
+<refactoring description="Rename package 'images' to 'cps.water.images'" flags="589830" hierarchical="false" id="org.eclipse.jdt.ui.rename.package" input="/src&lt;images" name="cps.water.images" qualified="false" references="true" stamp="1146760489855" textual="false" version="1.0"/>
+</session>

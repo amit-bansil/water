@@ -1,0 +1,91 @@
+/*
+ * CREATED ON:    Jul 27, 2005 11:29:36 AM
+ * CREATED BY:     Amit Bansil 
+ */
+package cps.jarch.data.event.tools;
+
+import cps.jarch.data.event.Link;
+import cps.jarch.util.misc.Worker;
+
+import java.util.EventObject;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * abstract type of link & factory for creating links that delay notification by
+ * a specified amount of time.<br>
+ * ID: $Id$
+ */
+public abstract class DelayedLink<T extends EventObject> implements Link<T> {
+	private long delay;
+
+	public final long getDelay() {
+		return delay;
+	}
+
+	private TimeUnit unit;
+
+	public final TimeUnit getDelayTimeUnit() {
+		return unit;
+	}
+
+	public final void setDelay(long delay, TimeUnit unit) {
+		this.delay = delay;
+		this.unit = unit;
+	}
+
+	public DelayedLink(long delay, TimeUnit unit) {
+		setDelay(delay, unit);
+	}
+
+	// ------------------------------------------------------------------------
+
+	/**
+	 * @return a link that passes events to 'out' on 'worker' using a
+	 *         conditional run with the given delay. Basically updates are
+	 *         slowed to occur no more than once per 'delay' time 'units'. Be
+	 *         careful about performing operations on the event since it may be
+	 *         accessed simulateously by multiple threads.
+	 * @see cps.jarch.util.misc.Worker#runConditional(long, TimeUnit,
+	 *      Runnable)
+	 */
+	public static <E extends EventObject>DelayedLink<E> createConditionalLink(
+			final Worker worker, long delay, TimeUnit units,final Link<E> out) {
+		return new DelayedLink<E>(delay, units) {
+            private E latestEvent = null;
+
+			public void receive(E event) {
+				latestEvent = event;
+				worker.runConditional(getDelay(), getDelayTimeUnit(),
+					new Runnable() {
+						public void run() {
+							out.receive(latestEvent);
+						}
+					});
+			}
+		};
+	}
+
+	/**
+	 * @return a link that passes events to 'out' on 'worker' using a lazy run
+	 *         with the given delay. Basically updates are slowed to occur only
+	 *         after none have happend for 'delay' time 'units'. Be careful
+	 *         about performing operations on the event since it may be accessed
+	 *         simulateously by multiple threads.
+	 * @see cps.jarch.util.misc.Worker#runLazy(long, TimeUnit, Runnable)
+	 */
+	public static <E extends EventObject>DelayedLink<E> createLazyLink(
+			final Worker worker, long delay, TimeUnit units,final Link<E> link) {
+		return new DelayedLink<E>(delay, units) {
+            private E latestEvent = null;
+
+			public void receive(E event) {
+				latestEvent = event;
+				worker.runLazy(getDelay(), getDelayTimeUnit(), new Runnable() {
+					public void run() {
+						link.receive(latestEvent);
+					}
+				});
+			}
+		};
+	}
+}

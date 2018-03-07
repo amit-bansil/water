@@ -1,0 +1,50 @@
+/*
+ * CREATED ON:    Apr 16, 2006 3:46:34 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import cps.jarch.util.notes.Nullable;
+import cps.water.simulation.SimModel;
+
+import javax.media.opengl.GL;
+import javax.media.opengl.glu.GLU;
+
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+/**
+ * <p>Draws a Scenegraph.
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class Renderer {
+	private SimModel simModel;
+	private DisplayModel displayModel;
+	private final Camera camera=new Camera();
+	
+	public final synchronized void simModelUpdated() {
+	}
+	public final synchronized void simModelReloaded() {
+	}
+	public final synchronized void setSimModel(@Nullable SimModel m) {
+	}
+	public final synchronized void setDisplayModel(@Nullable DisplayModel m) {
+	}
+	
+	// ------------------------------------------------------------------------
+	// rendering
+	public synchronized void init(GL gl,GLU glu) {
+		
+	}
+	public synchronized void render(GL gl, GLU glu) {
+		
+	}
+	
+}
+final class Camera() {
+	
+}
+
+

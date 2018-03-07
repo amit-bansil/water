@@ -1,0 +1,48 @@
+/*
+ * CREATED ON:    Apr 23, 2006 5:47:37 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.simulation;
+
+import cps.jarch.util.collections.ArrayFinal;
+
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+/**
+ * <p>TODO document OutputParameters
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class OutputParameters {
+	private final ReentrantReadWriteLock lock;
+	public OutputParameters(ReentrantReadWriteLock lock) {
+		this.lock=lock;
+	}
+	
+	private int recordStep=-1,recordCount=-1;
+	
+	void preStep() {
+		if(lock.getReadLockCount()<11)throw new IllegalThreadStateException();
+		
+		recordStep = recordStepSize.get();
+		recordCount = maxRecordingCount.get();
+	}
+	private int frameNumber;
+	void step() {
+		assert recordStep!=-1;
+		
+		frameNumber++;
+		if (frameNumber == nextRecord) {
+			ArrayFinal.Builder<Float> recordingBuilder = new ArrayFinal.Builder<Float>(
+					dataSets.getLength());
+			for (DataSet d : dataSets)
+				recordingBuilder.add(d.getValue());
+			recordings.addLast(recordingBuilder.create());
+			nextRecord += recordStep;
+		}
+	}
+	void postStep() {
+	}
+
+}

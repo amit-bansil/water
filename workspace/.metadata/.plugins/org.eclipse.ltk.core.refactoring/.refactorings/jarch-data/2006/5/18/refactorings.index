@@ -1,0 +1,7 @@
+1146494480968	Rename type 'cps.jarch.data.event.Link' to 'GenericLink'
+1146495360578	Rename method 'cps.jarch.data.event.GenericLink.receive(...)' to 'signal'
+1146494955093	Rename type 'cps.jarch.data.event.Publisher' to 'GenericPublisher'
+1146494916234	Rename type 'cps.jarch.data.event.tools.SimpleSourceImp' to 'SourceImp'
+1146494909140	Rename type 'cps.jarch.data.event.tools.SimpleSource' to 'Source'
+1146494697750	Rename type 'cps.jarch.data.event.Source' to 'GenericSource'
+1146494509093	Rename type 'cps.jarch.data.event.tools.SimpleLink' to 'Link'

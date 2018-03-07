@@ -1,0 +1,33 @@
+/*
+ * CREATED ON:    Apr 16, 2006 10:41:52 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.jarch.data.collections;
+
+import ca.odell.glazedlists.EventList;
+
+import java.util.concurrent.locks.ReadWriteLock;
+
+import cps.jarch.data.value.RejectedValueException;
+import cps.jarch.data.value.tools.CheckedValueImp;
+
+/**
+ * <p>TODO document ListItem
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class ListItem<T> extends CheckedValueImp<T>{
+	
+	public ListItem(EventList<T> list,boolean allowsNull, T defaultValue, ReadWriteLock lock) {
+		super(allowsNull, defaultValue, lock);
+	}
+
+	public ListItem(EventList<T> list,boolean allowsNull, T defaultValue) {
+		this(list,allowsNull, defaultValue,null);
+	}
+
+	@Override protected void check(T newValue) throws RejectedValueException {
+	}
+
+}

@@ -1,0 +1,14 @@
+/*
+ * CREATED ON:    Apr 21, 2006 4:52:09 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.util;
+/**
+ * <p>TODO document MouseToggleHandler
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class MouseToggleHandler {
+
+}

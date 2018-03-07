@@ -1,0 +1,36 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:05:59 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import cps.jarch.data.value.ROValue;
+import cps.jarch.gui.util.ComponentProxy;
+import cps.jarch.util.notes.Nullable;
+import cps.water.Model;
+
+import javax.swing.Box;
+import javax.swing.JComponent;
+
+/**
+ * <p>A {@link ComponentProxy} that edits a {@link DisplayModel}.
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public final class DisplayControls implements ComponentProxy{
+	private final JComponent panel;
+	private final ROValue<Model> controlledModel;
+	public final JComponent getComponent() {
+		return panel;
+	}
+	
+	public DisplayControls(ROValue<Model> controlledModel) {
+		panel=Box.createHorizontalBox();
+		this.controlledModel=focusedSelection;
+	}
+
+
+	private void unlinkModel(DisplayModel model2) {
+	}
+}

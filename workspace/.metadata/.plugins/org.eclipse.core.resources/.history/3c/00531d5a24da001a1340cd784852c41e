@@ -1,0 +1,17 @@
+/*
+ * CREATED ON:    May 2, 2006 3:52:27 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water;
+
+import javax.swing.JComponent;
+
+/**
+ * <p>TODO document StripedPane
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class StripedPane extends JComponent {
+
+}

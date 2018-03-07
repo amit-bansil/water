@@ -1,0 +1,65 @@
+/*
+ * CREATED ON:    Apr 23, 2006 10:56:54 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import javax.media.opengl.GL;
+import javax.media.opengl.glu.GLU;
+import javax.media.opengl.glu.GLUquadric;
+
+/**
+ * <p>TODO document CovBondDrawer
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class CovBondDrawer {
+	private boolean listCreated = false;
+
+	private int lname;
+	
+	public CovBondDrawer() {
+		
+	}
+	
+	public void kill(GL gl) {
+		if(!listCreated)throw new IllegalStateException("list !created");
+		gl.glDeleteLists(lname, 1);
+		listCreated = false;
+	}
+	
+	public void init(GL gl,GLU glu) {
+		if(listCreated)throw new IllegalStateException("list already created");
+
+		lname = gl.glGenLists(1);
+		GLUquadric quadric = glu.gluNewQuadric();
+		glu.gluQuadricOrientation(quadric, GLU.GLU_OUTSIDE);
+
+		float thickness=Renderer.covBondThickness;
+		
+		gl.glNewList(lname, GL.GL_COMPILE);
+		gl.gl
+		glu.gluCylinder(quadric,thickness,thickness,
+			.5f, Renderer.covBondStacks, Renderer.covBondSlices);
+		gl.glTranslatef(0,0,.5f);
+		glu.gluCylinder(quadric,thickness,thickness,
+			.5f, Renderer.covBondStacks, Renderer.covBondSlices);
+		gl.glEndList();
+		listCreated = true;
+
+		glu.gluDeleteQuadric(quadric);
+
+
+	}
+
+	//OPTIMIZE-create second display list for all commands?
+	//push geometry faster
+	
+	//gl.glTranslatef(ox, oy, oz);
+	//gl.glScalef(sx, sy, sz);
+	public void draw(GL gl) {
+		assert listCreated;
+		gl.glCallList(lname);
+	}
+}

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry excluding="**/.svn/**" kind="src" path="src"/>
+	<classpathentry exported="true" kind="lib" path="lib/alloyLnF/alloy.jar"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/jarch-data"/>
+	<classpathentry kind="output" path="bin~"/>
+</classpath>

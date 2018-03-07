@@ -1,0 +1,164 @@
+/*
+ * CREATED ON:    Apr 16, 2006 10:41:52 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.jarch.data.collections;
+
+import ca.odell.glazedlists.EventList;
+import ca.odell.glazedlists.event.ListEvent;
+import ca.odell.glazedlists.event.ListEventListener;
+import cps.jarch.data.event.Unlinker;
+import cps.jarch.data.event.tools.Link;
+import cps.jarch.data.value.CheckedValue;
+import cps.jarch.data.value.RejectedValueException;
+import cps.jarch.data.value.tools.CheckedValueImp;
+
+import java.util.EventObject;
+import java.util.concurrent.locks.Lock;
+
+/**
+ * <p>
+ * A {@link CheckedValue} that can be used to select an item from a dynamic
+ * list. Always nullable since if the is emptied the selection must be
+ * <code>null</code>. If the selected item is removed from the list the
+ * previous item in the list is selected.
+ * </p>
+ * 
+ * @version $Id$
+ * @author Amit Bansil
+ */
+
+//ERROR!! if a ListItem is read before its EventList IO will fail.
+//this is a design flaw.
+//SaveableData needs a way to specify 'required' data.
+//if, during a write, a SaveableData requires a piece of data that has not yet been written
+//it is put at the back of a queue and tried again after all others, during read do the same thing.
+//Report cycle dependency if we go through the queue without removing anything new.
+//report orphaned data if we go through the queue without removing anything new b/c something
+//note that a 
+//'required' data should be constant?
+//this should be implemented through Data(Input/Output)Ex interfaces which have xml&binary implementations
+//these interfaces have read/write SaveableData methods which do the queuing...
+//should also write an EvenList->SaveableData adapter
+public class ListItem<T> extends CheckedValueImp<T> implements Unlinker{
+	/**
+	 * Determines what happens if the selected item is removed from the list. If
+	 * SELECT_NEXT is desired the next item will be selected unless there is no
+	 * next item in which case the previous item will be selected. If
+	 * SELECT_PREVIOUS is desired the previous item will be selected unless
+	 * there is no previous item in which case the next item will be selected.
+	 * If the list is emptied or SELECT_NONE is desired the selection will
+	 * become <code>null</code>.
+	 */
+	public static enum OnRemove{SELECT_NEXT,SELECT_PREVIOUS,SELECT_NULL};
+	
+	private final EventList<T> list;
+	private final ListEventListener<T> listListener;
+	
+	//index of cur in list or -1 if cur==null
+	private int curIndex=-1;
+	
+	public ListItem(EventList<T> l, T initial,OnRemove onRemove) {
+		this(l,initial,onRemove,null);
+	}
+	public ListItem(EventList<T> l, T initial,final OnRemove onRemove, Lock lock) {
+		super(true, lock);
+		this.list=l;
+		
+		//update curIndex on value changes
+		connect(new Link() {
+			@Override public void signal(EventObject event) {				
+				if (get() == null) curIndex = -1;
+				else curIndex = list.indexOf(get());
+			}
+		});
+		
+		makeCurrentInitial();
+		
+		//curIndex should be set now
+		assert (get() == null && curIndex==-1)
+		|| list.get(curIndex) == get() :
+			"curIndex points to currentValue";
+		
+		//do onRemove if item is removed
+		listListener=new ListEventListener<T>() {
+			public void listChanged(ListEvent<T> listChanges) {
+				
+				T cur=get();
+				
+				//do nothing if no selection
+				if(cur==null)return;
+				
+				int newCurIndex=list.indexOf(cur);
+				
+				T newValue;
+				//TODO test this little algorithm
+				//if item is not removed or is removed & OnRemove=SELECT_NONE simply update curIndex
+				if(newCurIndex!=-1||onRemove==OnRemove.SELECT_NULL) {
+					curIndex=newCurIndex;
+					newValue=null;
+					
+					//read through changes so they don't accumulate
+					while (listChanges.nextBlock()) {
+						//do nothing
+					}
+				}else {
+					//otherwise figure out where to reposition
+					while (listChanges.next()) {
+			            int changeIndex = listChanges.getIndex();
+			            int changeType = listChanges.getType();
+	
+			            if(changeType == ListEvent.INSERT && changeIndex <= curIndex) 
+			                curIndex++;
+			            else if(changeType == ListEvent.DELETE && changeIndex < curIndex)
+			                curIndex--;
+					}
+					
+					//curIndex should now point to the element after cur
+					assert curIndex>0;
+					
+					//if list is emptied cur should be 0, instead make it null.
+					if(list.size()==0) {
+						assert curIndex==0;
+						newValue=null;
+					}else {
+						if(onRemove==OnRemove.SELECT_PREVIOUS) {
+							//we're on next, move to previous unless we can't
+							if(curIndex!=0) curIndex--;
+						}else {
+							assert onRemove==OnRemove.SELECT_NEXT;
+							//we're on next, so stay there unless we're past the end
+							if(curIndex==list.size())curIndex--;
+						}
+						newValue=list.get(curIndex);
+					}
+				}
+
+				try {
+					//note that curIndex may have a bad value at this point
+					checkedSet(newValue);
+				}catch(RejectedValueException e) {
+					throw new Error(e);//should not happen
+				}
+			}
+		};
+	}
+
+	public ListItem(EventList<T> list, T initial) {
+		this(list,initial,null);
+	}
+	public ListItem(EventList<T> list) {
+		this(list,null,null);
+	}
+
+	@Override protected void check(T newValue) throws RejectedValueException {
+		if (newValue != null) {
+			if (!list.contains(newValue))
+				throw new RejectedValueException(newValue, "not in list");
+		}
+	}
+
+	public void unlink() {
+		list.removeListEventListener(listListener);
+	}
+}

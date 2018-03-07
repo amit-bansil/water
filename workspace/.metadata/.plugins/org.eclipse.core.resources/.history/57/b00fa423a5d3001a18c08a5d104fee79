@@ -1,0 +1,14 @@
+/*
+ * CREATED ON:    Apr 24, 2006 1:56:20 AM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+/**
+ * <p>TODO document AtomsDrawer
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class AtomsDrawer {
+
+}

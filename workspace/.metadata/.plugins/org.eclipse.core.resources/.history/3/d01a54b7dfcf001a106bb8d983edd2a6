@@ -1,0 +1,29 @@
+/*
+ * CREATED ON:    Apr 16, 2006 3:46:34 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import javax.media.opengl.GL;
+import javax.media.opengl.glu.GLU;
+
+/**
+ * <p>Draws a Scenegraph.
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class Renderer {
+	
+	// ------------------------------------------------------------------------
+	// rendering
+	public void init(GL gl,GLU glu) {
+		
+	}
+	public void render(GL gl, GLU glu) {
+		
+	}
+	
+}
+
+

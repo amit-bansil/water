@@ -1,0 +1,162 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:03:14 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water;
+
+import com.incors.plaf.alloy.AlloyLookAndFeel;
+import com.incors.plaf.alloy.themes.bedouin.BedouinTheme;
+
+import cps.jarch.simulation.snapshot.SnapshotChooser;
+import cps.water.data.DataViewer;
+import cps.water.moleculedisplay.DisplayController;
+import cps.water.moleculedisplay.DisplayControls;
+import cps.water.moleculedisplay.DisplayPanel;
+import cps.water.simulation.SimulationController;
+
+import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JSplitPane;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.WindowConstants;
+import javax.swing.plaf.SplitPaneUI;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Toolkit;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+
+/**
+ * <p>TODO document GUI
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+//TODO io for GUI state
+public class GUI {
+	private final JFrame background;
+	private final JDialog frame;
+	private final Application app;
+	//TODO remove these controllers and move them into the app?
+	private final SimulationController simController;
+	private final DisplayController displayController;
+	
+	public GUI(final Application app) {
+		this.app=app;
+		
+		//disable lightweight popus so they don't conflict with heavyweight components
+		JPopupMenu.setDefaultLightWeightPopupEnabled(false);
+		
+		//setup alloy
+		//WARNING this may cause prolems on OSX
+		JFrame.setDefaultLookAndFeelDecorated(true);
+		JDialog.setDefaultLookAndFeelDecorated(true);
+		// register
+		com.incors.plaf.alloy.AlloyLookAndFeel.setProperty("alloy.licenseCode",
+			"u#Amit_Bansil#i30hb#d7jx00");
+		// install alloy
+		try {
+			UIManager.setLookAndFeel(new AlloyLookAndFeel(new BedouinTheme()));
+		} catch (UnsupportedLookAndFeelException e) {
+			// should not happen
+			throw new Error(e);
+		}
+		
+		//create black background
+		background = new JFrame();
+		background.setUndecorated(true);
+		background.getContentPane().setBackground(Color.BLACK);//TODO stripes
+		background.setLocation(0, 0);
+		background.setSize(Toolkit.getDefaultToolkit().getScreenSize());
+		
+		//create main frame
+		frame=new JDialog(background,"Water",false);
+		frame.setJMenuBar(buildMenuBar());
+		
+		
+		//create components
+		DataViewer dataViewer1=new DataViewer(app.getModel().getDataViewer1Model());
+		DataViewer dataViewer2=new DataViewer(app.getModel().getDataViewer2Model());
+		SnapshotChooser snapshotChooser=new SnapshotChooser(app.getModel());
+		DisplayPanel primaryDisplay=new DisplayPanel(app.getModel().getPrimarySelection());
+		DisplayPanel secondaryDisplay=new DisplayPanel(app.getModel().getSecondarySelection());
+		DisplayControls displayControls=new DisplayControls(app.getModel().getFocusedSelection());
+		simController=new SimulationController(app.getModel().getFocusedSelection());
+
+		//create layout
+		JPanel mainPanel=new JPanel(new BorderLayout(0,0));
+		JPanel topPanel=new JPanel(new BorderLayout(0,0));
+		JPanel bottomPanel=new JPanel(new BorderLayout(0,0));
+		
+		JSplitPane mainSplit,snapshotsSplit,dataSplit,displaySplit;
+		displaySplit=new JSplitPane(JSplitPane.VERTICAL_SPLIT,true,primaryDisplay.getComponent(),
+			secondaryDisplay.getComponent());
+		dataSplit=new JSplitPane(JSplitPane.VERTICAL_SPLIT,true,dataViewer1.getComponent(),
+			dataViewer2.getComponent());
+		mainSplit=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,true,dataSplit,mainPanel);
+		snapshotsSplit=new JSplitPane(JSplitPane.VERTICAL_SPLIT,true,mainSplit,
+			snapshotChooser.getComponent());
+		
+		mainPanel.add(topPanel,BorderLayout.NORTH);
+		mainPanel.add(bottomPanel,BorderLayout.SOUTH);
+		mainPanel.add(displaySplit);
+		
+		//bindings
+		//selected display
+		
+		//data/snapshots visible
+		
+		//TODO proper quit
+		frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+		frame.addWindowListener(new WindowAdapter() {
+			@Override public void windowClosed(WindowEvent e) {
+				background.dispose();
+				app.shutdown();
+				simController.shutdown();
+				displayController.shutdown();
+			}
+		});
+	}
+	private final String[][] menus = new String[][]{{"File", "Open", "Save", "Save As",
+			"Revert", "-", "Import...", "Export...", "-", "Exit"},
+			{"Display","#Shrink Molecules","#Show Traces","Recenter","#Spin","-","Options..."},
+			{"Simulate","Start/Stop","Run For...","Add Ion","-","Options..."},
+			{"View","#Charts","#Snapshots","#Comparison"},
+			{"Help","User Guide","Water Online","-","About"}};
+	//TODO real file menu
+	private JMenuBar buildMenuBar() {
+		final JMenuBar ret=new JMenuBar();
+		for(int i=0;i<menus.length;i++) {
+			String[] items=menus[i];
+			JMenu menu=new JMenu(items[0]);
+			for(int j=1;j<items.length;j++) {
+				String n=items[j];
+				if(n.startsWith("#")) {
+					n.substring(1);
+					menu.add(new JCheckBoxMenuItem(n));
+				}else if(n.equals("-")){
+					menu.addSeparator();
+				}else {
+					menu.add(new JMenuItem(n));
+				}
+			}
+			ret.add(menu);
+		}
+		return ret;
+	}
+
+	public void show() {
+		frame.pack();
+		//centerframe on screen
+		frame.setLocationRelativeTo(null);
+		frame.setVisible(true);
+	}
+}

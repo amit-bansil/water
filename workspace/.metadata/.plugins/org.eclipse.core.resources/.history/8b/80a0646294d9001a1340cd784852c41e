@@ -1,0 +1,128 @@
+/*
+ * CREATED ON:    Apr 23, 2006 5:30:28 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.simulation;
+
+import cps.jarch.data.value.RWValue;
+import cps.jarch.data.value.tools.BoundedValue;
+import cps.jarch.data.value.tools.RWValueImp;
+import cps.jarch.util.notes.Nullable;
+
+import java.util.concurrent.locks.ReentrantLock;
+
+/**
+ * <p>TODO document InputParameters
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class InputParameters {
+	static enum Mode {
+		KPresKTemp(Parameter.Pressure,Parameter.Temperature), KDensKTemp(Parameter.Density,Parameter.Temperature),
+			KPresKEn(Parameter.Pressure,Parameter.Energy), KDensKEn(Parameter.Density,Parameter.Energy);
+		Mode(Parameter a,Parameter b){
+			this.a=a;
+			this.b=b;
+		}
+		public final Parameter a,b;
+		@Override public String toString() {
+			return a.toString()+" & "+b.toString();
+		}
+	}
+	static enum Parameter{
+		Pressure,Temperature,Density,Energy
+	}
+	private final ReentrantLock lock;
+	InputParameters(ReentrantLock lock){
+		this.lock=lock;
+		mode=new RWValueImp<Mode>(Mode.KPresKTemp,false,lock);
+		desiredTemperature=new BoundedValue<Float>(1f,1f,1000f,lock);
+		desiredPressure=new BoundedValue<Float>(1f,-1000f,1000f,lock);
+		desiredDensity=new BoundedValue<Float>(.5f,.001f,.99999f,lock);
+	}
+	private final RWValue<Mode> mode;
+	private final BoundedValue<Float> desiredTemperature;
+	private final BoundedValue<Float> desiredPressure;
+	private final BoundedValue<Float> desiredDensity;
+	
+	
+	public final @Nullable BoundedValue<Float> getParameter(Parameter p){
+		switch(p) {
+			case Pressure:return desiredPressure;
+			case Temperature:return desiredTemperature;
+			case Density:return desiredDensity;
+			default:return null;
+		}
+	}
+	public final RWValue<Mode> mode(){
+		return mode;
+	}
+
+	private Mode oldMode;
+	private float oldTemp,oldPres,oldDens;
+	
+	final void apply(Engine raw) {
+		if(!lock.isHeldByCurrentThread())throw new IllegalThreadStateException();
+		
+		if (oldMode != mode.get()) {
+			switch (mode.get()) {
+				case KPresKTemp: // '\0'
+					raw.kpres = true;
+					raw.ktemp = true;
+					break;
+
+				case KDensKTemp: // '\001'
+					raw.kpres = false;
+					raw.ktemp = true;
+					break;
+
+				case KPresKEn: // '\002'
+					raw.kpres = true;
+					raw.ktemp = false;
+					break;
+
+				case KDensKEn: // '\003'
+					raw.kpres = false;
+					raw.ktemp = false;
+					break;
+			}
+			oldMode = mode.get();
+		}
+		if (raw.ktemp) {
+			if (oldTemp != desiredTemperature.get()) {
+				oldTemp = desiredTemperature.get();
+				raw.setemperature(oldTemp);
+			}
+		}
+		if (raw.kpres) {
+			if (oldPres != desiredPressure.get()) {
+				oldPres = desiredPressure.get();
+				raw.setpressure(oldPres);
+			}
+		} else {// kdens
+			if (oldDens != desiredDensity.get()) {
+				oldDens = desiredDensity.get();
+				raw.setdensity(oldDens);
+			}
+		}
+	}
+
+	void clear(Engine raw) {
+		if(!lock.isHeldByCurrentThread())throw new IllegalThreadStateException();
+		
+		oldTemp=(float)raw.etemp;desiredTemperature.setUnchecked(oldTemp);
+		oldPres=(float)raw.epres;desiredPressure.setUnchecked(oldPres);
+		oldDens=(float)raw.erho;desiredDensity.setUnchecked(oldDens);
+		oldMode=Mode.KPresKTemp;mode.set(oldMode);
+	}
+
+	public void read(InputParameters orig) {
+		mode.set(orig.mode.get());
+		desiredTemperature.setUnchecked(orig.desiredTemperature.get());
+		desiredPressure.setUnchecked(orig.desiredPressure.get());
+		desiredDensity.setUnchecked(orig.desiredDensity.get());
+	}
+
+
+}

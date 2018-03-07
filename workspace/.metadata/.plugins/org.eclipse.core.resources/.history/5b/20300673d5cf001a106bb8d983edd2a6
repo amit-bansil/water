@@ -1,0 +1,21 @@
+/*
+ * CREATED ON:    Apr 19, 2006 2:38:25 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.util;
+
+import cps.jarch.util.notes.Constant;
+
+/**
+ * <p>TODO document PackedFloatArray
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public interface PackedFloatArray {
+	public @Constant int getBandSize();
+	public int size();
+	public void get(float[] dst,int dstStartIndex,int srcStartIndex,int count);
+	public void set(float[] src,int srcStartIndex,int dstStartIndex,int count);
+	public void clear();
+}

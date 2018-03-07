@@ -1,0 +1,175 @@
+/*
+ * BoundedNumberCellEditor.java
+ * CREATED:    Jun 19, 2005 11:02:59 PM
+ * AUTHOR:     Amit Bansil
+ * PROJECT:    celest-framework-gui
+ * 
+ * Copyright 2005 The Center for Polymer Studies,
+ * Boston University, all rights reserved.
+ * */
+package cps.jarch.simulation.components;
+
+import cps.jarch.gui.components.CELESTLook;
+import cps.jarch.data.event.tools.Link;
+
+import javax.swing.DefaultCellEditor;
+import javax.swing.JFormattedTextField;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.text.DefaultFormatterFactory;
+import javax.swing.text.NumberFormatter;
+import java.awt.Color;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.text.NumberFormat;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.EventObject;
+import java.util.List;
+
+public class BoundedNumberCellEditor extends DefaultCellEditor {
+	// update background of text field on theme change
+	private static final List<JFormattedTextField> activeFields = new ArrayList<JFormattedTextField>();
+
+	private static Color currentBackground = CELESTLook.getInstance()
+		.getPaleSelectionColor();
+	static {
+		CELESTLook.getInstance().getChangeSupport().connect(new Link() {
+			@Override public void signal(EventObject event) {
+				Color newBackground = CELESTLook.getInstance()
+					.getPaleSelectionColor();
+				if (!newBackground.equals(currentBackground)) {
+					for (JFormattedTextField f : activeFields) {
+						f.setBackground(newBackground);
+					}
+					currentBackground = newBackground;
+				}
+			}
+		});
+	}
+
+	private static final JFormattedTextField createField() {
+		return new JFormattedTextField() {
+			@Override
+			public void addNotify() {
+				super.addNotify();
+				activeFields.add(this);
+				setBackground(currentBackground);
+			}
+
+			@Override
+			public void removeNotify() {
+				super.removeNotify();
+				activeFields.remove(this);
+			}
+		};
+	}
+
+	private final NumberFormatter formatter;
+
+	public BoundedNumberCellEditor(float min, float max) {
+		super(createField());
+		setClickCountToStart(2);
+		final JFormattedTextField field = (JFormattedTextField) editorComponent;
+		field.setBorder(null);
+		field.setHorizontalAlignment(SwingConstants.RIGHT);
+		final NumberFormat format = NumberFormat.getNumberInstance();
+		formatter = new NumberFormatter(format);
+		formatter.setMaximum(max);
+		formatter.setMinimum(min);
+		field.setFormatterFactory(new DefaultFormatterFactory(formatter));
+		field.addFocusListener(new FocusListener() {
+			public void focusLost(FocusEvent e) {
+				if (e.getOppositeComponent() != field
+						&& e.getOppositeComponent() != field.getParent()) {
+					// if focus is transferred outside the table stop editing
+					stopCellEditing();
+				}
+			}
+
+			// when the user types to gain focus on this cell
+			// we want to dump the current input and use what they typed
+			// intead
+			public void focusGained(FocusEvent e) {
+				// first we have to invoke later so that
+				// processing of whatever event caused the focus gain
+				// is proccessed
+				SwingUtilities.invokeLater(new Runnable() {
+					public void run() {
+						String text = field.getText();
+						Object fv = field.getValue();
+
+						// just quit on weirdness
+						if (text == null || fv == null) return;
+
+						String value = format.format(fv);
+
+						// if it was a key event text will be updated but fv
+						// won't be
+						// so we take the new text entered and make that the
+						// current text
+						if (text.length() > value.length()
+								&& text.endsWith(value)) {
+							final String newText = text.substring(0, text
+								.length()
+									- value.length());
+							field.setText(newText);
+						} else {
+							// here we almost definately have a mouse event
+							// ideally we could also set the cursor to be in the
+							// right position but not sure how, so lets just
+							// selectall
+							field.selectAll();
+
+						}
+					}
+				});
+			}
+		});
+		// remove old delegate
+		field.removeActionListener(delegate);
+		delegate = new EditorDelegate() {
+			@Override
+			public void setValue(Object value) {
+				field.setValue(value);
+			}
+
+			@Override
+			public Object getCellEditorValue() {
+				return new Float(field.getValue().toString());
+			}
+
+			@Override
+			public boolean stopCellEditing() {
+				if (field.isEditValid()) {
+					try {
+						field.commitEdit();
+					} catch (ParseException ex) {
+						// TODO log
+					}
+				} else {
+					super.stopCellEditing();
+					return false;
+				}
+				return super.stopCellEditing();
+			}
+		};
+		field.addActionListener(delegate);
+	}
+
+	public final void setMax(float max) {
+		formatter.setMaximum(max);
+	}
+
+	public final void setMin(float min) {
+		formatter.setMinimum(min);
+	}
+
+	public final Float getMax() {
+		return (Float) formatter.getMaximum();
+	}
+
+	public final Float getMin() {
+		return (Float) formatter.getMinimum();
+	}
+}

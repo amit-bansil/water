@@ -1,0 +1,233 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:02:41 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water;
+
+import cps.jarch.data.event.tools.Link;
+import cps.jarch.gui.components.CELESTLook;
+import cps.jarch.gui.util.EDTWorker;
+import cps.jarch.util.misc.Worker;
+import cps.water.moleculedisplay.DisplayPanel;
+import cps.water.moleculedisplay.GLWorker;
+import cps.water.simulation.ShakeFailException;
+import cps.water.time.TimeModel;
+
+import javax.swing.SwingUtilities;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+/**
+ * <p>Main class for starting Water application. Methods should be invoked on EDT only.
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class Application {
+	private final AppModel model;
+	public final AppModel getModel() {
+		return model;
+	}
+	private final GUI gui;
+	//create application
+	public Application() {
+		EDTWorker.checkThread();
+		simWorker=new Worker("SimulationWorker");
+		
+		simWorker.setDaemon(true);
+		simWorker.setPriority(Thread.NORM_PRIORITY);
+		simWorker.start();
+		
+		model=new AppModel(simWorker);
+		gui=new GUI(this);
+		
+		Link runningL=new Link() {
+			@Override public void signal() {
+				boolean pr=model.getTimeModel().getRunning(true).get();
+				boolean sr=model.getTimeModel().getRunning(false).get();
+				if (primaryRunning!=pr
+						|| secondaryRunning!=sr) {
+					
+					modelLock.lock();
+					primaryRunning=pr;
+					secondaryRunning=sr;
+					modelLock.unlock();
+					
+					if(primaryRunning||secondaryRunning) {
+						simWorker.runConditional(0,TimeUnit.MILLISECONDS,updateSims);
+					}
+				}
+			}
+		};
+		final Link displayChangeL=new Link() {
+			@Override protected void signal() {
+				EDTWorker.checkThread();
+				postUpdateRendering();
+			}
+		};
+		Link simChangeL=new Link() {
+			@Override protected void signal() {
+				if(model.primarySelection().get()!=primary||model.secondarySelection().get()!=secondary) {
+					if(primary!=null) primary.getDisplay().getSource().disconnect(displayChangeL);
+					if(secondary!=null) secondary.getDisplay().getSource().disconnect(displayChangeL);
+					
+					
+					modelLock.lock();
+					try {
+						primary=model.primarySelection().get();
+						secondary=model.secondarySelection().get();
+					}finally {
+						modelLock.unlock();
+					}
+					
+					if(primary!=null) primary.getDisplay().getSource().connect(displayChangeL);
+					if(secondary!=null) secondary.getDisplay().getSource().connect(displayChangeL);
+
+					simWorker.runConditional(0,TimeUnit.MILLISECONDS,updateSims);
+				}
+			}
+		};
+		model.getTimeModel().getRunning(true).connect(runningL);
+		model.getTimeModel().getRunning(false).connect(runningL);
+		model.getSource().connect(simChangeL);
+		simChangeL.signal(null);
+	}
+	//make gui visible
+	public final void show() {
+		EDTWorker.checkThread();
+		gui.show();
+	}
+	public final void shutdown() {
+		//do nothing
+	}
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		//run on EDT
+		try {
+			SwingUtilities.invokeAndWait(new Runnable() {
+				public void run() {
+					CELESTLook.setup();
+					//TODO: show splashscreen,parse input files/parameters
+					new Application().show();
+				}
+			});
+		} catch (InterruptedException e) {
+			//should not happen
+			throw new Error(e);
+		} catch (InvocationTargetException e) {
+			//should not happen
+			throw new Error(e);
+		}
+	}
+
+	private final Lock modelLock=new ReentrantLock();
+	private final Lock sceneLock=new ReentrantLock();
+	private final Condition sceneCondition=sceneLock.newCondition();
+	
+	private final Worker simWorker;
+	private AppModel.Model primary,secondary;
+	private boolean primaryRunning,secondaryRunning;
+	private static long updateSimDelayMillis=50;
+	
+	private boolean renderingUpToDate=false;
+	private void postUpdateRendering() {
+		System.out.println("postUpdate");
+		renderingUpToDate=false;
+		GLWorker.getInstance().runConditional(0,TimeUnit.MILLISECONDS,updateRendering);
+	}
+	private final Runnable updateRendering=new Runnable() {
+		public void run() {
+			System.out.println("runningUpdate"+renderingUpToDate);
+			if(renderingUpToDate)return;
+			renderingUpToDate=true;
+			//set to re-run 1 frame later, but won't do anything unless there is a change
+			GLWorker.getInstance().runConditional(updateSimDelayMillis,TimeUnit.MILLISECONDS,updateRendering);
+			updateSims();
+		}
+	};
+	private final Runnable updateSims=new Runnable(){
+	
+		public void run() {
+			updateSims();
+		}
+	
+	};
+	private void updateSims() {
+		System.out.println("updateSims");
+		//grab models& running info
+		modelLock.lock();
+		AppModel.Model primary=this.primary;
+		AppModel.Model secondary=this.secondary;
+		boolean primaryRunning=this.primaryRunning,secondaryRunning=this.secondaryRunning;
+		modelLock.unlock();
+		
+		//if we're running post a new update
+		if(primaryRunning||secondaryRunning)
+			simWorker.runConditional(updateSimDelayMillis,TimeUnit.MILLISECONDS,updateSims);
+		
+		//if we're running simulate nec. frames
+		//direct read here is fine....
+		int stepsPerSecond=Math.round(model.getTimeModel().getStepsPerSecond().get()*TimeModel.STEP_SCALE);
+		int stepCount=Math.round(stepsPerSecond*(updateSimDelayMillis/1000f));
+		try {
+			if(primary!=null&&primaryRunning)primary.getSimModel().step(stepCount);	
+			if(secondary!=null&&secondaryRunning)secondary.getSimModel().step(stepCount);	
+		}catch(ShakeFailException e) {
+			//TODO prompt for reset
+			e.printStackTrace();
+		}
+		
+		sceneLock.lock();
+		try {
+			//wait for old renderings to finish
+			if(!scenesRead) {
+				System.out.println("waiting for renderer to prevent frame drop");
+				sceneCondition.awaitUninterruptibly();
+			}
+			//push new data to renderers
+			if(primary!=null)primary.getRenderScene().readScene(primary.getSimModel().getScene());
+			if(secondary!=null)secondary.getRenderScene().readScene(secondary.getSimModel().getScene());
+			scenesRead=false;
+		}finally {
+			sceneLock.unlock();
+		}
+		postUpdateRendering();
+	}
+	private boolean scenesRead=true;
+	private void updateRenderings() {		
+		System.out.println("updateRenderings");
+		DisplayPanel primaryDisplay=gui.primaryDisplay;
+		DisplayPanel secondaryDisplay=gui.secondaryDisplay;
+		modelLock.lock();
+		AppModel.Model primary=this.primary;
+		AppModel.Model secondary=this.secondary;
+		modelLock.unlock();
+		
+		//read display & sim data
+		sceneLock.lock();
+		try {
+			if(!scenesRead)sceneCondition.signal();
+			scenesRead=true;
+			if(primary!=null)primaryDisplay.read(primary.getDisplay(),primary.getRenderScene());
+			else secondaryDisplay.clear();
+			if(secondary!=null)secondaryDisplay.read(secondary.getDisplay(),secondary.getRenderScene());
+			else secondaryDisplay.clear();
+		}finally {
+			sceneLock.unlock();
+		}		
+		//do rendering
+		if(primary!=null)primaryDisplay.render();
+		if(secondary!=null)secondaryDisplay.render();
+		//swap buffers
+		if(primary!=null)primaryDisplay.swap();
+		if(secondary!=null)secondaryDisplay.swap();
+		
+		//TODO if we're animating post
+	}
+}

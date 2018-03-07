@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<session version="1.0">
+<refactoring description="Rename type 'cps.water.simulation.OutputParameters' to 'Output'" flags="589830" id="org.eclipse.jdt.ui.rename.type" input="/src&lt;cps.water.simulation{OutputParameters.java[OutputParameters" matchStrategy="1" name="Output" qualified="false" references="true" similarDeclarations="false" stamp="1145915217640" textual="false" version="1.0"/>
+<refactoring description="Rename type 'cps.water.ModelManager' to 'AppModel'" flags="589830" id="org.eclipse.jdt.ui.rename.type" input="/src&lt;cps.water{ModelManager.java[ModelManager" matchStrategy="1" name="AppModel" qualified="false" references="true" similarDeclarations="false" stamp="1146067383875" textual="false" version="1.0"/>
+</session>

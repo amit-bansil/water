@@ -1,0 +1,14 @@
+/*
+ * CREATED ON:    Apr 23, 2006 5:29:04 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.simulation;
+/**
+ * <p>TODO document Scene
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class Scene {
+
+}

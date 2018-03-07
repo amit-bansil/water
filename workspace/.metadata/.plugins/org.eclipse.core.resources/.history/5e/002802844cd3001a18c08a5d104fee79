@@ -1,0 +1,116 @@
+/*
+ * CREATED ON:    Apr 23, 2006 11:25:28 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import com.sun.opengl.util.BufferUtil;
+
+import cps.water.util.Transform3D;
+
+import javax.media.opengl.GL;
+import javax.media.opengl.glu.GLU;
+import javax.media.opengl.glu.GLUquadric;
+import javax.vecmath.Color3f;
+import javax.vecmath.Tuple3f;
+
+import java.nio.DoubleBuffer;
+
+/**
+ * <p>TODO document GLAccess
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+class GLAccess {
+	private GL gl;
+	private GLU glu;
+	final void setup(GL gl,GLU glu) {
+		this.gl=gl;
+		this.glu=glu;
+	}
+	
+	GLAccess() {
+		//DO nothing
+	}
+
+	// ------------------------------------------------------------------------
+
+	final void setColor(Color3f color) {
+		gl.glColor3f(color.x,color.y,color.z);
+	}
+
+	// ------------------------------------------------------------------------
+
+	final void translate(Tuple3f t) {
+		translate(t.x,t.y,t.z);
+	}
+	final void translate(float x,float y,float z) {
+		gl.glTranslatef(x,y,z);
+	}
+	final void translate(float[] f,int offset) {
+		translate(f[offset],f[offset+1],f[offset+2]);
+	}
+	private final DoubleBuffer matrixBuffer=BufferUtil.newDoubleBuffer(16);
+	private final double[] matrixArray=new double[16];
+	private final Transform3D tempTransform=new Transform3D();
+	final void transform(Transform3D transform) {
+		matrixBuffer.rewind();
+		tempTransform.transpose(transform);
+		tempTransform.get(matrixArray);
+		matrixBuffer.put(matrixArray);
+		gl.glMultMatrixd(matrixBuffer);
+	}
+	// ------------------------------------------------------------------------
+	private static enum DisplayListState{NEW,LIVE,DEAD}
+	final class DisplayList{
+		private final int listNum;
+		private DisplayListState state=DisplayListState.NEW;
+		private DisplayList() {
+			listNum=gl.glGenLists(1);
+			gl.glNewList(listNum, GL.GL_COMPILE);
+		}
+		final void end() {
+			if(state!=DisplayListState.NEW)throw new IllegalStateException();
+			gl.glEndList();
+			state=DisplayListState.LIVE;
+		}
+		final void call() {
+			if(state!=DisplayListState.LIVE)throw new IllegalStateException();
+			gl.glCallList(listNum);
+		}
+		final void kill() {
+			if(state!=DisplayListState.LIVE)throw new IllegalStateException();
+			gl.glDeleteLists(listNum, 1);
+		}
+	}
+	final DisplayList beginList() {
+		return new DisplayList();
+	}
+	// ------------------------------------------------------------------------
+	final Quadrics createQuadrics() {
+		return new Quadrics();
+	}
+	final class Quadrics{
+		private final GLUquadric quadric;
+		private boolean alive=true;
+		Quadrics(){
+			quadric = glu.gluNewQuadric();
+			glu.gluQuadricOrientation(quadric, GLU.GLU_OUTSIDE);
+		}
+		final void sphere(float radius,int slices,int stacks) {
+			if(!alive)throw new IllegalStateException();
+			glu.gluSphere(quadric, radius, slices, stacks);
+		}
+		final void cylinder(float radius,float height,int slices) {
+			if(!alive)throw new IllegalStateException();
+			glu.gluCylinder(quadric,radius,radius,
+				height,1, slices);
+		}
+		final void kill() {
+			if(!alive)throw new IllegalStateException();
+			alive=false;
+			glu.gluDeleteQuadric(quadric);
+		}
+	}
+}

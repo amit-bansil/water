@@ -1,0 +1,66 @@
+/*
+ * CREATED ON:    Apr 23, 2006 11:25:28 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import javax.media.opengl.GL;
+import javax.media.opengl.glu.GLU;
+import javax.vecmath.Color3f;
+import javax.vecmath.Tuple3f;
+
+/**
+ * <p>TODO document GLAccess
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+class GLAccess {
+	private final GL gl;
+	public final GL gl() {
+		return gl;
+	}
+	private final GLU glu;
+	public final GLU glu() {
+		return glu;
+	}
+	GLAccess(GL gl,GLU glu) {
+		this.gl=gl;
+		this.glu=glu;
+	}
+	
+	final void setColor(Color3f color) {
+		gl.glColor3f(color.x,color.y,color.z);
+	}
+	final DisplayList beginList() {
+		return new DisplayList();
+	}
+	final void translate(Tuple3f t) {
+		gl.glTranslatef(t.x,t.y,t.z);
+	}
+	final void translate(float[] f,int offset) {
+		gl.glTranslatef(f[offset],f[offset+1],f[offset+2]);
+	}
+	private static enum DisplayListState{NEW,LIVE,DEAD}
+	final class DisplayList{
+		private final int listNum;
+		private DisplayListState state=DisplayListState.NEW;
+		private DisplayList() {
+			listNum=gl.glGenLists(1);
+			gl.glNewList(listNum, GL.GL_COMPILE);
+		}
+		public final void end() {
+			if(state!=DisplayListState.NEW)throw new IllegalStateException();
+			gl.glEndList();
+			state=DisplayListState.LIVE;
+		}
+		public final void call() {
+			if(state!=DisplayListState.LIVE)throw new IllegalStateException();
+			gl.glCallList(listNum);
+		}
+		public final void kill() {
+			if(state!=DisplayListState.LIVE)throw new IllegalStateException();
+			gl.glDeleteLists(listNum, 1);
+		}
+	}
+}

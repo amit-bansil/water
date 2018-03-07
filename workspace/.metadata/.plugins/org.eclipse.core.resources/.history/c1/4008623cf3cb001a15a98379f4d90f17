@@ -1,0 +1,34 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:05:59 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+/**
+ * <p>TODO document DsiplayEditor
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class DisplayControls {
+	private DisplayModel model;
+
+	public DisplayControls(final DisplayModel model) {
+		super();
+		this.model = model;
+	}
+
+	/**
+	 * @return the model
+	 */
+	public DisplayModel getModel() {
+		return model;
+	}
+
+	/**
+	 * @param model the model to set
+	 */
+	public void setModel(DisplayModel model) {
+		this.model = model;
+	}
+	
+}

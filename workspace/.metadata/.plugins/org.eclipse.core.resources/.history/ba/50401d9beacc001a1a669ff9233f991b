@@ -1,0 +1,59 @@
+package cps.water.simulation;
+
+import cps.jarch.util.collections.ArrayFinal;
+
+import java.util.EnumSet;
+
+public enum Ion {
+	//		  || r     |g  |b  |sym    |sig        |eps        |ch     |wait    ||
+	CHLORINE	(0,		1,	0,	"CL-",	0.3732306,	0.5654149,	-1.0,	34.96885),
+	FLUORINE	(0,		.5f,1,	"F-",	0.352,		0.1234519,	-1.0,	18.99840),
+	SODIUM		(1,		0,	.5f,"Na+",	0.2446165,	2.088542,	1.0,	22.9898),
+	LITHIUM		(1,		.5f,0,	"Li+",	0.1993304,	4.118660,	1.0,	7.01600),
+	POTASSIUM	(0,		.5f,1,	"K+",	0.325,		0.5684810,	1.0,	38.96371),
+	BROMINE		(1,		0,	.5f,"Br-",	0.416,		0.5684810,	-1.0,	80.9163),
+	IODINE		(.5f,	0,	1,	"I-",	0.441,		0.2282355,	-1.0,	126.9044),
+	HELIUM		(1,		1,	0,	"He",	0.256,		0.08491,	0.0,	4.0026),
+	NEON		(0,		.5f,1,	"Ne",	0.276,		0.295076,	0.0,	20.183),
+	ARGON		(0,		1,	0,	"Ar",	0.341,		0.9954366,	0.0,	39.948),
+	KRYPTON		(1,		0,	.5f,"Kr",	0.366,		1.379038,	0.0,	83.80),
+	XENON		(.5f,	0,	1,	"Xe",	0.37,		0.7531200,	0.0,	130.9051),
+	CESIUM		(0,		0,	1,	"Cs+",	0.361,		0.6624250,	1.0,	132.9051);
+	
+	public final float r,g,b;
+	public final double sig,eps,solch,wait;
+	public final String symbol;
+	public final double size;
+	/**
+	 * name with only first letter capitalized.
+	 */
+	public final String niceName;
+	/**
+	 * get distance that two ions should be given between eachother.
+	 */
+	public static final float getDistance(Ion a,Ion b) {
+		return (float)((a.sig+b.sig)/4.0f)-0.01f;
+	}
+	Ion(float r, float g, float b, String symbol, double sig, double eps, double solch,
+			double wait) {
+		this.r = r;
+		this.g = g;
+		this.b = b;
+		this.symbol = symbol;
+		this.sig = sig;
+		this.eps = eps;
+		this.solch = solch;
+		this.wait = wait;
+		this.size = sig / 2f;
+		char[] lower = toString().toLowerCase().toCharArray();
+		lower[0] = Character.toUpperCase(lower[0]);
+		niceName = new String(lower);
+	}
+	public static final 
+	public static final 
+	public static final EnumSet<Ion> 
+		nobleGasses=EnumSet.of(Ion.HELIUM,Ion.NEON,Ion.ARGON,Ion.KRYPTON,Ion.XENON),
+		plusSalts=EnumSet.of(Ion.SODIUM,Ion.LITHIUM,Ion.POTASSIUM,Ion.CESIUM),
+		minusSalts=EnumSet.of(Ion.CHLORINE,Ion.FLUORINE,Ion.BROMINE,Ion.IODINE);
+}
+

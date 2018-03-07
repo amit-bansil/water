@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<project name="jarch-data" default="build">
+	<description>Builds this project after all its dependencies (as defined in importdeps and builddeps) have been built.</description>
+	<target name="init" unless="initdone">
+		<property name="initdone" value="yes"/>
+		<tstamp/>
+		<!--path to put all build stuff relative to THIS "BUILD" FOLDER IN THE USER'S ECLIPSE WORKSPACE-->
+		<property name="dumpdir" value="../../release"/>
+		<mkdir dir="${dumpdir}"/>
+		<!--where other stuff is in the eclipse project:-->
+		<property name="src" value="../src"/>
+		<property name="build" value="../bin~"/>
+	</target>
+	
+	<!--after building deps, build this project unless a parent build has already done it-->
+	<target name="build" depends="init,builddeps" unless="built.jarch-util">
+		<mkdir dir="${build}"/>
+		<javac srcdir="${src}" destdir="${build}">
+			<classpath>
+		     	<fileset dir="${dumpdir}"><include name="**/*.jar"/></fileset>
+			</classpath>
+		</javac>
+		<mkdir dir="${dumpdir}/jarch/${DSTAMP}"/>
+		<jar jarfile="${dumpdir}/jarch/${DSTAMP}/jarch-data.jar" basedir="${build}" update="true" index="true">
+			<manifest>
+				<!--paths to jars in the release tree:-->
+				<attribute name="Class-Path" value="jarch-util.jar jarch-glazedlists.jar"/>
+			</manifest>
+		</jar>
+		<!--this ensures that parents dont build this twice, and passes along the jar locations:-->
+		<property name="built.jarch-data"
+			value="${dumpdir}/jarch/${DSTAMP}/jarch-data.jar"/>
+	</target>
+	
+	<target name="builddeps" depends="build.jarch-util,build.jarch-glazedlists" description="makes deps build by inserting their build.projectname tasks into depends"/>
+	
+	<target name="build.jarch-util" unless="built.jarch-util" description="builds this prerequisite project">
+		<ant dir="../../jarch-util/build/"/>
+	</target>
+	<target name="build.jarch-glazedlists" unless="built.jarch-glazedlists" description="builds this prerequisite project">
+		<ant dir="../../jarch-glazedlists/build/"/>
+	</target>
+</project>

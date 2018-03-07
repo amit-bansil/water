@@ -1,0 +1,42 @@
+/*
+ * CREATED ON:    Apr 24, 2006 1:56:20 AM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import cps.water.moleculedisplay.GLAccess.DisplayList;
+import cps.water.moleculedisplay.GLAccess.Quadrics;
+
+/**
+ * <p>TODO document AtomsDrawer
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+class AtomsDrawer {
+	private DisplayList hAtomList,oAtomList;
+	
+	final void init(GLAccess gla) {
+		Quadrics quadrics=gla.createQuadrics();
+		hAtomList=gla.beginList();
+		quadrics.sphere(Renderer.hSize, Renderer.hSlices, Renderer.hStacks);
+		hAtomList.end();
+		oAtomList=gla.beginList();
+		quadrics.sphere(Renderer.oSize, Renderer.oSlices, Renderer.oStacks);
+		quadrics.kill();
+	}
+	final void draw(GLAccess gla,float[] positions,float radScale) {
+		//draw o atoms
+		draw(gla,positions,radScale,0,oAtomList);
+		//draw h1 atoms
+		draw(gla,positions,radScale,1,hAtomList);
+		//draw h1 atoms
+		draw(gla,positions,radScale,2,hAtomList);
+	}
+	private void draw(GLAccess gla, float[] positions, float radScale, int offset, DisplayList atomList) {
+	}
+	final void kill(GLAccess gla) {
+		hAtomList.kill(gla);
+		oAtomList.kill(gla);
+	}
+}

@@ -1,0 +1,17 @@
+/*
+ * CREATED ON:    Apr 19, 2006 2:38:39 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.util;
+/**
+ * <p>TODO document ObjectArray
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public interface ObjectArray<Type> {
+	public int size();
+	public void get(Type[] dst,int dstStartIndex,int srcStartIndex,int count);
+	public void set(Type[] src,int srcStartIndex,int dstStartIndex,int count);
+	public void clear();
+}

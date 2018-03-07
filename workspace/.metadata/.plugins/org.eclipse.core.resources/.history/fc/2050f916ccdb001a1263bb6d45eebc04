@@ -1,0 +1,209 @@
+/*
+ * CREATED ON:    Apr 20, 2006 12:47:27 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.simulation;
+
+import cps.jarch.data.DataUtils;
+import cps.jarch.data.event.GenericLink;
+import cps.jarch.data.event.tools.DelayedLink;
+import cps.jarch.data.event.tools.Link;
+import cps.jarch.data.event.tools.LinkAdapter;
+import cps.jarch.data.value.ROValue;
+import cps.jarch.data.value.tools.BoundedValue;
+import cps.jarch.gui.components.LayoutUtils;
+import cps.jarch.gui.util.EDTWorker;
+import cps.jarch.util.misc.LogEx;
+import cps.water.AppModel;
+import cps.water.ControlFactory;
+import cps.water.AppModel.Model;
+
+import javax.swing.Box;
+import javax.swing.ButtonGroup;
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
+import javax.swing.JRadioButton;
+import javax.swing.JSpinner;
+
+import java.util.EventObject;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * <p>TODO document SimulationController
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class SimControls {
+	private static final LogEx<SimControls> log = LogEx.createClassLog(SimControls.class);
+	
+	public SimControls(final ROValue<Model> focusedSelection) {		
+		kPres=new JRadioButton("Pressure");
+		kDens=new JRadioButton("Density");
+		kTemp=new JCheckBox("Temperature");
+		ButtonGroup bg=new ButtonGroup();
+		bg.add(kPres);
+		bg.add(kDens);
+		
+		//layout
+		c=Box.createHorizontalBox();		
+		
+		//bindings
+		//constants->model.mode
+		LinkAdapter constantsToModelLink=new LinkAdapter(){
+			public void run() {
+				if(input!=null) {
+					input.lock.lock();
+					input.kPres.set(kPres.isSelected());
+					input.kTemp.set(kTemp.isSelected());
+					input.lock.unlock();
+				}else log.warning(SimControls.this, "constants changed when nothing focused");
+			}
+		};
+		kPres.addActionListener(constantsToModelLink);
+		kDens.addActionListener(constantsToModelLink);
+		kTemp.addActionListener(constantsToModelLink);
+		
+		DataUtils.linkAndSync(focusedSelection,new Link() {
+			@Override public void signal() {
+				 AppModel.Model m=focusedSelection.get();
+				
+				 if(input!=null)unlink();
+				 if(m!=null)link(m.getSimModel().getInputParameters());
+			}
+		});
+	}
+
+	private final JComponent c;
+
+	public JComponent getComponent() {
+		return c;
+	}
+	
+	private final JRadioButton kPres,kDens;
+	private final JCheckBox kTemp;
+	private JSpinner presSpinner,densSpinner,tempSpinner;
+	private BoundedValue<Float> pressure,temperature,density;
+	
+	private InputParameters input;
+	
+	private final GenericLink<EventObject> temperatureToGUILink =
+		DelayedLink.createConditionalLink(EDTWorker.getInstance(), 1, TimeUnit.MILLISECONDS, new Link() {
+		@Override public void signal() {
+			if(input!=null) {
+				System.out.println("T="+input.desiredTemperature.get());
+				temperature.setUnchecked(input.desiredTemperature.get());
+			}else log.warning(SimControls.this, "constantsToGUILink signaled without input");
+		}
+	});
+	
+	private final GenericLink<EventObject> pressureToGUILink=
+		DelayedLink.createConditionalLink(EDTWorker.getInstance(), 1, TimeUnit.MILLISECONDS, new Link() {
+		@Override public void signal() {
+			if(input!=null) {
+				pressure.setUnchecked(input.desiredPressure.get());
+			}else log.warning(SimControls.this, "pressureToGUILink signaled without input");
+		}
+	});
+	private final GenericLink<EventObject> densityToGUILink=
+		DelayedLink.createConditionalLink(EDTWorker.getInstance(), 1, TimeUnit.MILLISECONDS, new Link() {
+		@Override public void signal() {
+			if(input!=null) {
+				density.setUnchecked(input.desiredDensity.get());
+			}else log.warning(SimControls.this, "densityToGUILink signaled without input");
+		}
+	});	
+	
+	private final GenericLink<EventObject> constantsToGUILink=
+		DelayedLink.createConditionalLink(EDTWorker.getInstance(), 1, TimeUnit.MILLISECONDS, new Link() {
+			@Override public void signal() {
+					if (input != null) {
+						updateConstants();
+					} else log.warning(SimControls.this,
+						"temperatureToGUILink signaled without input");
+				}
+		});
+	
+	
+	private final void link(InputParameters newInput) {
+		assert this.input==null;
+		this.input=newInput;
+		
+		//bind&create pres,temp,dens <-> spinners if not yet done, do layout here
+		if(pressure==null) {
+			pressure=input.desiredPressure.createCopy();
+			temperature=input.desiredTemperature.createCopy();
+			density=input.desiredDensity.createCopy();
+			
+			presSpinner=ControlFactory.createFloatSpinner(InputParameters.PRESSURE_STEP,pressure);
+			densSpinner=ControlFactory.createFloatSpinner(InputParameters.DENSITY_STEP,density);
+			tempSpinner=ControlFactory.createFloatSpinner(InputParameters.TEMPERATURE_STEP,temperature);
+			
+			pressure.connect(new Link() {
+				@Override public void signal() {
+					if(input!=null)input.desiredPressure.setUnchecked(pressure.get());
+				}
+			});
+			density.connect(new Link() {
+				@Override public void signal() {
+					if(input!=null)input.desiredDensity.setUnchecked(density.get());
+				}
+			});
+			temperature.connect(new Link() {
+				@Override public void signal() {
+					if(input!=null)input.desiredTemperature.setUnchecked(temperature.get());
+				}
+			});
+			
+			c.add(kTemp);
+			c.add(tempSpinner);
+			c.add(LayoutUtils.mediumPad());
+			c.add(kDens);
+			c.add(densSpinner);
+			c.add(LayoutUtils.mediumPad());
+			c.add(kPres);
+			c.add(presSpinner);
+		}
+		
+		input.kTemp.connect(constantsToGUILink);
+		input.kPres.connect(constantsToGUILink);
+		DataUtils.linkAndSync(input.desiredDensity,densityToGUILink);
+		DataUtils.linkAndSync(input.desiredPressure,pressureToGUILink);
+		DataUtils.linkAndSync(input.desiredTemperature,temperatureToGUILink);
+		
+		updateConstants();
+	}
+	private final void unlink() {
+		input.kPres.disconnect(constantsToGUILink);
+		input.kTemp.disconnect(constantsToGUILink);
+		input.desiredDensity.disconnect(densityToGUILink);
+		input.desiredPressure.disconnect(pressureToGUILink);
+		input.desiredTemperature.disconnect(temperatureToGUILink);
+		
+		input=null;
+		
+		updateEnabled();
+	}
+	private void updateConstants() {
+		input.lock.lock();
+		if(input.kPres.get()) {
+			kPres.setSelected(true);
+		}else {
+			kDens.setSelected(true);
+		}
+		kTemp.setSelected(input.kTemp.get());
+		input.lock.unlock();
+		updateEnabled();
+	}
+	private void updateEnabled() {
+		boolean hasInput=input!=null,cTemp=kTemp.isSelected(),cPres=kPres.isSelected();
+		
+		kTemp.setEnabled(hasInput);
+		kPres.setEnabled(hasInput);
+		kDens.setEnabled(hasInput);
+		presSpinner.setEnabled(hasInput&&cPres);
+		tempSpinner.setEnabled(hasInput&&cTemp);
+		densSpinner.setEnabled(hasInput&&!cPres);
+		
+	}
+}

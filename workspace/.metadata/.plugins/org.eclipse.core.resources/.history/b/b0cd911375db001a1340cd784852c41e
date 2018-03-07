@@ -1,0 +1,88 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:06:39 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import cps.jarch.data.event.GenericSource;
+import cps.jarch.data.event.tools.Link;
+import cps.jarch.data.event.tools.Source;
+import cps.jarch.data.event.tools.SourceImp;
+import cps.jarch.data.value.tools.BoundedValue;
+import cps.jarch.data.value.tools.RWFlag;
+
+/**
+ * <p>TODO document DisplayModel, IO, kill read()
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class DisplayModel {
+	public static enum ColorScheme{
+		Type("Type"),KineticEnergy("Kinetic Energy"),PotentialEnergy("Potential Energy");
+		private final String title;
+		private ColorScheme(String title) {
+			this.title=title;
+		}
+		@Override public String toString() {
+			return title;
+		}
+	}
+	
+	private final RWFlag shrinkMolecules=new RWFlag(true);
+	public DisplayModel() {
+		Link l=source.getSendEventLink();
+		cameraZoom.connect(l);
+		spotSize.connect(l);
+		shrinkMolecules.connect(l);
+	}
+	public final RWFlag shrinkMolecules() {
+		return shrinkMolecules;
+	}
+	private final BoundedValue<Float> cameraZoom=new BoundedValue<Float>(1f,.5f,10f);//0 is closest
+	public final BoundedValue<Float> cameraZoom(){
+		return cameraZoom;
+	}
+//	0 is spotlight off & normal lighting instead
+	private final BoundedValue<Float> spotSize=new BoundedValue<Float>(1f,0f,10f);
+	public final BoundedValue<Float> spotSize(){
+		return spotSize;
+	}
+	private float rotateX,rotateY;
+	private final float[] translation=new float[3];
+	public final void getTranslation(float[] dst) {	
+		System.arraycopy(translation, 0, dst, 0, 3);
+	}
+	public final void setTranslation(float[] src) {
+		System.arraycopy(src, 0, translation, 0, 3);
+		source.sendEvent();
+	}
+	public final float getRotateX() {
+		return rotateX;
+	}
+	public final float getRotateY() {
+		return rotateY;
+	}
+	public final void setRotation(float x,float y) {//degrees, see GLAccess.rotateCamera
+		rotateX=x;
+		rotateY=y;
+		source.sendEvent();
+	}
+	//read's the state of m into this
+	public final void read(DisplayModel m) {
+		cameraZoom.setUnchecked(m.cameraZoom.get());
+		setRotation(m.rotateX, m.rotateY);
+		shrinkMolecules.set(m.shrinkMolecules.get());
+		spotSize.setUnchecked(m.spotSize.get());
+		setTranslation(m.translation);
+	}
+	//change source
+	private final SourceImp source = new SourceImp(this);
+
+	/**
+	 *@return a {@link GenericSource} for observing changes to this.
+	 */
+	public final Source getSource() {
+		return source;
+	}
+}

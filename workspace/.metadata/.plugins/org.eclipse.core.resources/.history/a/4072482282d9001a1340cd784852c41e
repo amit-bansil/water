@@ -1,0 +1,14 @@
+/*
+ * CREATED ON:    May 1, 2006 10:11:31 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.time;
+/**
+ * <p>TODO document TimeModel
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class TimeModel {
+
+}

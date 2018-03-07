@@ -1,0 +1,124 @@
+/*
+ * ValueView.java
+ * CREATED:    Jun 18, 2005 11:57:10 PM
+ * AUTHOR:     Amit Bansil
+ * PROJECT:    celest-framework-data
+ * 
+ * Copyright 2005 The Center for Polymer Studies,
+ * Boston University, all rights reserved.
+ * */
+package cps.jarch.data.value.tools;
+
+import java.util.EventObject;
+
+import cps.jarch.data.event.Unlinker;
+import cps.jarch.data.event.tools.Link;
+import cps.jarch.data.value.AbstractROValue;
+import cps.jarch.data.value.CheckedValue;
+import cps.jarch.data.value.RWValue;
+import cps.jarch.data.value.RejectedValueException;
+import cps.jarch.data.value.ValueChange;
+import cps.jarch.data.value.ValueLink;
+import cps.jarch.data.value.tools.Converter.ConversionException;
+import cps.jarch.util.notes.Nullable;
+
+// use ValueConverter in these cases:
+// UNCLEAR how will converter inconsistiens effect this
+// OPTIMIZE cache conversion results
+//inherits locking from target value.
+public class ConvertedValue<InType, OutType> extends AbstractROValue<OutType>
+		implements CheckedValue<OutType>, Unlinker {
+	public static <In,Out> ConvertedValue<In,Out> create(Converter<In, Out> converter,
+			RWValue<In> value){
+		return new ConvertedValue<In, Out>(converter,value);
+	}
+	public ConvertedValue(Converter<InType, OutType> converter,
+			RWValue<InType> value) {
+		super(value.isNullable(),value.getLock());
+		if (converter.isNullable() != value.isNullable())
+			throw new Error("converter and value must have same nullability");
+		if (!converter.isConvertSafe())
+			throw new Error("converter must be convert safe");
+		this.converter = converter;
+		this.value = value;
+		value.connect(valueLink);
+	}
+
+	private final Converter<InType, OutType> converter;
+
+	private final RWValue<InType> value;
+
+	private final Link valueLink = new Link() {
+		public void signal(EventObject event) {
+			try {
+				fireChange();
+			} catch (ConversionException e) {
+				// should not happen, since converter convertSafe
+				throw new Error(e);
+			}
+		}
+	};
+
+	public void checkedSet(@Nullable OutType out)throws RejectedValueException{
+		try {
+			value.set(converter.unconvert(out));
+		} catch (ConversionException e) {
+			throw new RejectedValueException("unconversion failed",e);
+		}
+	}
+
+	public OutType get() {
+		try {
+			return converter.convert(value.get());
+		} catch (ConversionException e) {
+			// should not happen, since converter convertSafe
+			throw new Error(e);
+		}
+	}
+
+	public void unlink() {
+		value.disconnect(valueLink);
+	}
+
+	// TODO normal toString() here and the rest of this project, comments
+
+	public static final ConvertedValue<Integer, String> intToString(
+			final RWValue<Integer> prop) {
+		return toString(prop, Integer.class);
+	}
+
+	public static final ConvertedValue<Double, String> doubleToString(
+			final RWValue<Double> prop) {
+		return toString(prop, Double.class);
+	}
+
+	public static final ConvertedValue<Long, String> longToString(
+			final RWValue<Long> prop) {
+		return toString(prop, Long.class);
+	}
+
+	public static final ConvertedValue<Boolean, String> booleanToString(
+			final RWValue<Boolean> prop) {
+		return toString(prop, Boolean.class);
+	}
+
+	public static final ConvertedValue<Float, String> floatToString(
+			final RWValue<Float> prop) {
+		return toString(prop, Float.class);
+	}
+
+	public static final <T>ConvertedValue<T, String> toString(
+			final RWValue<T> prop, Class<T> type) {
+		return new ConvertedValue<T, String>(Converter
+			.createReflectiveStringConverter(type, prop.isNullable()), prop);
+	}
+
+	/**
+	 * bind an enumeration using Converter.createEnumToStringConverter.
+	 */
+	public final <T extends Enum>ConvertedValue<T, String> enumToString(
+			final RWValue<T> prop, final String name, Class<T> type) {
+		return new ConvertedValue<T, String>(Converter.createEnumToStringConverter(
+			type, prop.isNullable()), prop);
+	}
+}

@@ -1,0 +1,46 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:05:35 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import cps.jarch.gui.util.ComponentProxy;
+import cps.jarch.util.misc.LogEx;
+import cps.jarch.util.notes.ThreadSafe;
+
+import javax.swing.JComponent;
+
+/**
+ * <p>
+ * A {@link ComponentProxy} that shows a 3d representation of a
+ * {@link DisplayModel}. Applications that contain DisplayPanels should call
+ * {@link #initialize()} during application startup.
+ * </p>
+ * 
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class DisplayPanel implements ComponentProxy{
+	private static final LogEx<DisplayPanel> log = LogEx
+		.createClassLog(DisplayPanel.class);
+	
+	private static boolean intialized=false;
+	/**
+	 * 
+	 */
+	public static final @ThreadSafe synchronized void intialize() {
+		//only allow intialization once but log every call.
+		if(intialized) log.debug("already initialized, no action taken");
+		else log.debug("initializing");
+		intialized=true;
+	}
+	
+	public static final void renderSnapshot(DisplayModel model) {
+		log.debugEnter(null, "model", model);
+	}	
+	
+	private final JComponent component;
+	public JComponent getComponent() {
+		return component;
+	}
+}

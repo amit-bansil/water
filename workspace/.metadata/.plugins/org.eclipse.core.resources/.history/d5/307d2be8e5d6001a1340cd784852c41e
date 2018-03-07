@@ -1,0 +1,472 @@
+/*
+ * ResourceAccessor.java
+ * CREATED:    Jan 10, 2005 10:55:40 PM
+ * AUTHOR:     Amit Bansil
+ * PROJECT:    CELESTFramework
+ * 
+ * Copyright 2005 The Center for Polymer Studies,
+ * Boston University, all rights reserved.
+ * */
+package cps.jarch.gui.resources;
+
+import cps.jarch.util.collections.SafeMap;
+import cps.jarch.util.misc.LangUtils;
+import cps.jarch.util.misc.LogEx;
+import cps.jarch.util.misc.StringUtils;
+import cps.jarch.util.notes.Constant;
+import cps.jarch.util.notes.Nullable;
+
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Graphics;
+import java.awt.Image;
+import java.awt.MediaTracker;
+import java.awt.image.BufferedImage;
+import java.net.URL;
+import java.util.Arrays;
+import java.util.MissingResourceException;
+import java.util.ResourceBundle;
+//TODO finish these docs
+/**
+ * <p>
+ * Provides an abstraction layer and useful utilities for accessing resources
+ * that are stored in the class path. Typically a class which wishes to access associated resources will
+ * define a <code>ResourceAccessor</code> as follows.:
+ * </p>
+ * 
+ * <pre>
+ * private static final ResourceAccessor res = ResourceAccessor
+ * 	.loadResources(SomeClass.class);
+ * </pre>
+ * 
+ * <p>
+ * <code>res</code> should then be used to access that class's resources.
+ * String resources will be loaded from a SomeClass.properties file that should
+ * be placed in the same package as SomeClass. Note that SomeClass.properties
+ * may have a locale specific extension as specified in {@link ResourceBundle}.
+ * Images/Icons will be loaded from a 
+ * </p>
+ * 
+ * <p>
+ * Since the underlying {@link java.util.ResourceBundle} is cached and instances
+ * of <code>ResourceAccessor</code> are usually static, no caching of
+ * <code>ResourceAccessor</code>'s or values is performed.
+ * </p>
+ * 
+ * <p>
+ * Resources are generally {@link cps.jarch.util.notes.Constant}s by nature.
+ * </p>
+ * 
+ * <p>
+ * Errors and missing resources are handled by logging a warning and returning a
+ * dummy value so that all errors can be seen from a single run and software is
+ * more resistant to totally failing if a resource is missing.
+ * </p>
+ * 
+ * 
+ * @author Amit Bansil
+ * @version $Id: ResourceAccessor.java 541 2005-09-02 11:59:35Z bansil $
+ */
+public abstract class ResourceAccessor {
+	private static final LogEx<ResourceAccessor> log = LogEx
+		.createClassLog(ResourceAccessor.class);
+
+	// ------------------------------------------------------------------------
+	//creation
+	/**
+	 * @return ResourceAccessor backed by a Map
+	 * @throws IllegalArgumentException
+	 *             if mapData is not an array of arrays of the form {String
+	 *             key,Object value}. Loading of string & icon values is
+	 *             supported. Icons should be immutable.
+	 */
+	public static final ResourceAccessor load(Object[][] mapData) {
+		return new MapResourceAccessor(mapData);
+	}
+	private static final class MapResourceAccessor extends ResourceAccessor {
+		private final SafeMap<String, Object> resources;
+		private MapResourceAccessor(Object[][] mapData) {
+			//mapData->Resources
+			resources = new SafeMap<String,Object>(mapData.length);
+			for (int i = 0; i < mapData.length; i++) {
+				try {
+					if (mapData[i].length != 2)
+						throw new IllegalArgumentException("mapData[i].length!=2");
+					String key = (String) mapData[i][0];
+					resources.put(key, mapData[i][1]);
+				} catch (RuntimeException e) {
+					throw new IllegalArgumentException("element " + i + " in "
+							+ Arrays.deepToString(mapData)
+							+ "does not have form {<String>,<Object>}", e);
+				}
+			}
+		}
+
+		@Override protected String _loadString(String key) {
+			try {
+				return (String)resources.getMap().get(key);
+			} catch (ClassCastException e) {
+				String s = resources.get(key).toString();
+				warnValueCorrupt(key, "expected string", s, e);
+				return s;
+			}
+		}
+		@Override public Icon tryLoadIcon(String key) {
+			try {
+				return (Icon)resources.getMap().get(key);
+			} catch (ClassCastException e) {
+				String s = resources.get(key).toString();
+				warnValueCorrupt(key, "expected Icon", s, e);
+				return null;
+			}
+		}
+	}
+	/**
+	 * loads resources for a class. result is not cached.
+	 * 
+	 * @see ResourceBundle#getBundle(java.lang.String) which is used to get the
+	 *      underlying data.
+	 */
+	@Constant public static final ResourceAccessor load(final Class holder) {
+		log.debugEnterStatic("holder", holder);
+		return new BundleResourceAccessor(holder);
+	}
+	
+	
+	
+	private static final class BundleResourceAccessor extends ResourceAccessor {
+		private final Class holder;
+		//path images are stored under
+		private static final String IMAGES = "images";
+		private final ResourceBundle bundle;
+
+		private final String path;
+
+		private BundleResourceAccessor(Class holder) {
+			super();
+			// OPTIMIZE use a real class,less calculates in name, preload?
+			path = ResourceResolver.getPackagePath(holder) + ResourceResolver.SEPARATOR_CHAR;
+			// locale/class loading in here
+			bundle = ResourceBundle.getBundle(ResourceResolver.getClassPath(holder));
+			this.holder = holder;
+		}
+
+		@Override protected String _loadString(String key) {
+			try {
+				return bundle.getString(key);
+			} catch (ClassCastException e) {
+				String s = bundle.getObject(key).toString();
+				warnValueCorrupt(key, "expected string", s, e);
+				return s;
+			} catch (MissingResourceException e) {
+				// OPTIMIZED for when almost all keys always have values
+				// few tests for resource not present, otherwise would
+				// preload log this for performance
+				return null;
+			}
+		}
+
+		@Override public Icon tryLoadIcon(String key) {
+			return tryLoadImageIcon(path+IMAGES, key);
+		}
+
+		@Override public int hashCode() {
+			return holder.hashCode();
+		}
+
+		@Override public final String toString() {
+			return holder.toString();
+		}
+
+		@Override public boolean equals(Object obj) {
+			if (obj instanceof BundleResourceAccessor) {
+				BundleResourceAccessor res = (BundleResourceAccessor) obj;
+				return holder.equals(res.holder);
+			} else return false;
+		}
+	}
+
+	/**
+	 * @return a <code>ResourceAccessor</code> that prefixes all keys with
+	 *         <code>'.'+keyPrefix</code> or <code>this</code> if
+	 *         <code>keyPrefix</code> is <code>null</code> or empty.
+	 */
+	@Constant public ResourceAccessor getChild(@Nullable String keyPrefix) {
+		log.debugEnter(this, "keyPrefix", keyPrefix);
+		if (keyPrefix == null || keyPrefix.length() == 0) return this;
+		return new ChildResourceAccessor(this,keyPrefix);
+	}
+
+	private static final class ChildResourceAccessor extends ResourceAccessor {
+		private final String keyPrefix;
+		private final ResourceAccessor parent;
+		public ChildResourceAccessor(ResourceAccessor parent,String keyPrefix) {
+			assert !StringUtils.isBlank(keyPrefix);
+			this.parent=parent;
+			this.keyPrefix = keyPrefix;
+		}
+
+		@Override protected final String _loadString(String key) {
+			return parent._loadString(keyPrefix + '.' + key);
+		}
+
+		@Override public final Icon tryLoadIcon(String name) {
+			return parent.tryLoadIcon(keyPrefix + '.' + name);
+		}
+
+		@Override public final String toString() {
+			return parent.toString() + '[' + keyPrefix + ']';
+		}
+
+		/**
+		 * Optimization to prevent unneeded chaining of ResourceAccessors.
+		 * 
+		 * @see cps.jarch.gui.resources.ResourceAccessor#getChild(java.lang.String)
+		 */
+		@Override public final ResourceAccessor getChild(@Nullable String keyPrefix) {
+			log.debugEnter(this, "keyPrefix", keyPrefix);
+			if (keyPrefix == null || keyPrefix.trim().length() == 0) return this;
+			return new ChildResourceAccessor(parent,this.keyPrefix + "." + keyPrefix);
+		}
+
+		//override hashCode & equals to match the spec of deepConstant
+		@Override public int hashCode() {
+			return 31 * (1 + keyPrefix.hashCode()) + parent.hashCode();
+		}
+
+		@Override public boolean equals(Object obj) {
+			if (obj instanceof ChildResourceAccessor) {
+				ChildResourceAccessor res = (ChildResourceAccessor) obj;
+				return keyPrefix.equals(res.keyPrefix);
+			} else return false;
+		}
+	};
+
+	/**
+	 * @return a ResourceAccessor that simply returns keys as values.
+	 *         <code>loadImage</code> will fail and <code>tryLoadImage</code>
+	 *         will return <code>null</code>. This method is meant for
+	 *         prototyping, not production code, and thus it is deprecated.
+	 */
+	@Constant @Deprecated public static final ResourceAccessor getIdentity() {
+		return IDENTITY;
+	}
+
+	private static final ResourceAccessor IDENTITY = new ResourceAccessor() {
+		@Override protected String _loadString(String key) {
+			log.debugEnter(this, "key", key);
+			return key;
+		}
+
+		@Override public final String toString() {
+			return "IdentityResourceAccessor";
+		}
+
+		@Override public Icon tryLoadIcon(String key) {
+			return null;
+		}
+	};
+
+	// ------------------------------------------------------------------------
+	/**
+	 * @return <code>String</code> value associated with <code>key</code> or
+	 *         <code>null</code> no such value is defined. note that normally
+	 *         no whitespace is stripped to allow leading spaces if needed.
+	 */
+	@Constant protected @Nullable abstract String _loadString(String key);
+
+	// ------------------------------------------------------------------------
+	// string access
+	// ------------------------------------------------------------------------
+
+	/**
+	 * @see ResourceAccessor#_loadString(String)
+	 * @return the <code>String</code> value associated with <code>key</code>
+	 *         or <code>null</code> if no such value is defined.
+	 */
+	@Constant public final @Nullable String tryLoadString(String key) {
+		return _loadString(key);
+	}
+
+	/**
+	 * @see ResourceAccessor#_loadString(String)
+	 * @return the value associated with key, not null. If none is defined key
+	 *         is returned.
+	 */
+	@Constant public final String loadString(String key) {
+		String ret = _loadString(key);
+		if (ret == null) {
+			warnValueCorrupt(key, "value not found", null, null);
+			return key;
+		}
+		return ret;
+	}
+
+	/**
+	 * @return if this contains a String value for key. Faster to tryLoadString and deal
+	 * with null case.
+	 */
+	@Constant public final boolean hasKey(String key) {
+		return _loadString(key) != null;
+	}
+
+	/**
+	 * Load an array of <code>keys</code>, possibly converting them to
+	 * <code>String</code>s if they are not already, and add
+	 * <code>prefix</code> before each as well as <code>postfix</code>
+	 * after. If a resolved key cannot be found a warning is printed and the key
+	 * is used for its value.
+	 * 
+	 * @param prefix
+	 *            defaults to <code>null</code>. Ignored if <code>null</code>.
+	 * @param postfix
+	 *            defaults to <code>null</code>. Ignored if <code>null</code>.
+	 * 
+	 * If no value is defined a key is used for value and a warning printed.
+	 */
+	@Constant public final String[] loadStringArray(@Nullable String prefix,
+			Object[] keys, @Nullable String postfix) {
+		String[] ret = new String[keys.length];
+
+		String prefixStr = StringUtils.isBlank(prefix) ? "" : prefix + ".";
+
+		for (int i = 0; i < keys.length; i++) {
+			StringBuilder k = new StringBuilder(keys[i].toString());
+			if (!StringUtils.isBlank(postfix)) {
+				k.append('.');
+				k.append(postfix);
+			}
+			ret[i] = loadString(prefixStr + k);
+		}
+		return ret;
+	}
+	@Constant public final String[] loadStringArray(@Nullable String prefix,
+			Object[] keys) {
+		return loadStringArray(prefix, keys, null);
+	}
+
+	// ------------------------------------------------------------------------
+	// image access
+	// ------------------------------------------------------------------------
+	// TODO put image loading in a separate class
+	protected static final String[] imageExtensions = new String[]{"", ".gif", ".jpg",
+			".jpeg", ".png"};
+
+	// note that this is expensive...
+	// TODO allow a 'Blank{w,h}" code to just create a blank image
+	// so other locales can change graphics without overwriting
+	/**
+	 * @return <code>Icon</code> associated with <code>key</code>. If
+	 *         none can be found a warning will be printed an a dummy will be
+	 *         found.
+	 */
+	public final Icon loadIcon(String name) {
+		Icon ret = tryLoadIcon(name);
+		if (ret == null) {
+			warnValueCorrupt("image:'" + name);
+			return DUMMY_ICON;
+		}
+		return ret;
+	}
+	private static final Icon DUMMY_ICON=new Icon() {
+		public void paintIcon(Component c, Graphics g, int x, int y) {
+			Color color=g.getColor();
+			g.setColor(Color.blue);
+			g.fillRect(x,y,x+16,y+16);
+			g.setColor(color);
+		}
+		public int getIconWidth() {
+			return 16;
+		}
+
+		public int getIconHeight() {
+			return 16;
+		}
+		
+	};
+	
+	/**
+	 * @return <code>Icon</code> associated with <code>key</code> or
+	 *         <code>null</code> if no such icon has been defined.
+	 */
+	public abstract @Nullable Icon tryLoadIcon(String key);
+
+	// 
+	/**
+	 * Utility method to convert an icon to an image either casting through if
+	 * its an ImageIcon or by taking a snapshot. Expensive.
+	 * 
+	 * @param component
+	 *            required to create snapshot image.
+	 */
+	public static final Image toImage(Icon image, Component component) {
+		log.debugEnterStatic("image, component", image, component);
+		if (image instanceof ImageIcon) return ((ImageIcon) image).getImage();
+		Image ret = component.createImage(image.getIconWidth(), image.getIconHeight());
+		if (ret == null) {
+			log.warning(null, "component '{0}' could not create image, "
+					+ "it is probably not connected to a peer, "
+					+ "ARGB buffered image used instead", component);
+			ret = new BufferedImage(image.getIconWidth(), image.getIconHeight(),
+				BufferedImage.TYPE_INT_ARGB);
+		}
+		Graphics g = ret.getGraphics();
+		image.paintIcon(component, g, 0, 0);
+		g.dispose();
+		return ret;
+	}
+
+	private static final ImageIcon tryLoadImageIcon(String path, String name) {
+		return _loadImageIcon(path +  ResourceResolver.SEPARATOR_CHAR + name);
+	}
+
+	// TODO optimize so we don't have to keep on parsing out class names
+	// load an image directly without keying though a resource bundle
+	private static final @Nullable ImageIcon _loadImageIcon(String fullName) {
+		for (String imageExtension : imageExtensions) {
+			URL ret =  ResourceResolver.defaultFindResource(fullName + imageExtension);
+			if (ret != null) {
+				ImageIcon retimage = new ImageIcon(ret);
+				if (retimage.getImageLoadStatus() != MediaTracker.COMPLETE) {
+					log.warning(null, "image:'{0}' corrupt", fullName);
+					return null;
+				}
+				return retimage;
+			}
+		}
+		return null;
+	}
+
+	
+	// ------------------------------------------------------------------------
+	// error reporting
+	// ------------------------------------------------------------------------
+	/**
+	 * 
+	 * log a warning explaining that the <code>value</code> obtained from
+	 * <code>key</code> in this bundle is corrupt.
+	 * 
+	 * @param value
+	 *            the string value associated with key, possibly
+	 *            <code>null</code>, or an object created from it. defaults
+	 *            to <code>tryLoadString(key)</code>
+	 * @param t
+	 *            the exception that caused the error, possibly
+	 *            <code>null</code>.
+	 * 
+	 */
+	public final void warnValueCorrupt(String key, String msg, @Nullable Object value,
+			@Nullable Throwable t) {
+		LangUtils.checkArgNotNull(key, "key");
+		LangUtils.checkArgNotNull(msg, "msg");
+		log.warning(this, "Value Corrupt: {0}" + "\n  key    ='{1}'"
+				+ "\n  value  ='{2}'", t, msg, key, value);
+	}
+
+	public final void warnValueCorrupt(String key){
+		warnValueCorrupt(key, null, tryLoadString(key), null);
+	}
+}

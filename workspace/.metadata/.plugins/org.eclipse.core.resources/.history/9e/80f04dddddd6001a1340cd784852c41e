@@ -1,0 +1,56 @@
+/*
+ * CREATED ON:    Apr 26, 2006 7:00:25 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.jarch.data.io;
+
+import cps.jarch.util.misc.LogEx;
+import cps.jarch.util.notes.Nullable;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+
+
+/**
+ * <p>A utility class for copying the state of a {@link SaveableData} type from one instance 
+ *  into another.
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class StateCopier {
+	private static final LogEx<StateCopier> log = LogEx.createClassLog(StateCopier.class);
+	
+	//ByteArrayOutputStream implementation that allows direct access to buffer
+	//for better performance
+	private static final class ByteArrayOutputStreamEx extends ByteArrayOutputStream{
+		ByteArrayOutputStreamEx(byte[] buf){
+			super();
+			this.buf=buf;
+		}
+		byte[] getBuffer() {
+			return buf;
+		}
+	}
+	public static final int DEFAULT_BUFFER_SIZE=128;
+	/**
+	 * Copies
+	 */
+	public static final <SourceType extends SaveableData, DstType extends SourceType>void copy(
+			SourceType source, DstType[] dsts, @Nullable byte[] buf) throws IOException {
+		log.debugEnterStatic("source, dsts, buf", source, dsts, buf);
+
+		if (buf == null) buf = new byte[DEFAULT_BUFFER_SIZE];
+		ObjectOutputStreamEx out = new ObjectOutputStreamEx(new ByteArrayOutputStreamEx(
+			buf), false);
+		source.write(out);
+		out.flush();
+		out.close();
+
+		for (DstType dst : dsts) {
+			ObjectInputStreamEx in = new ObjectInputStreamEx(
+				new ByteArrayInputStream(buf));
+			dst.read(in);
+		}
+	}
+}

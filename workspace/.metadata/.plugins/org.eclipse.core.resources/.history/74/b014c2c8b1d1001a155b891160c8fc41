@@ -1,0 +1,24 @@
+/*
+ * CREATED ON:    Apr 20, 2006 12:47:36 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import cps.jarch.data.value.ROValue;
+import cps.water.Model;
+
+/**
+ * <p>TODO document DisplayController
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class DisplayController {
+
+	public DisplayController(ROValue<Model> focusedSelection) {
+	}
+
+	public void shutdown() {
+	}
+
+}

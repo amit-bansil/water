@@ -1,0 +1,476 @@
+/*
+ * @(#)BorderLayout.java	1.56 04/05/18
+ *
+ * Copyright 2004 Sun Microsystems, Inc. All rights reserved.
+ * SUN PROPRIETARY/CONFIDENTIAL. Use is subject to license terms.
+ */
+
+package cps.jarch.gui.util;
+
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.Insets;
+import java.awt.LayoutManager2;
+
+// a border layout that fixes the aspect ratio of the main component
+public class AspectLayout implements LayoutManager2,
+				     java.io.Serializable {
+
+	Component north;
+	Component west;
+	Component east;
+    Component south;
+	Component center;
+
+    /**
+     * The north layout constraint (top of container).
+     */
+    public static final String NORTH  = "North";
+
+    /**
+     * The south layout constraint (bottom of container).
+     */
+    public static final String SOUTH  = "South";
+
+    /**
+     * The east layout constraint (right side of container).
+     */
+    public static final String EAST   = "East";
+
+    /**
+     * The west layout constraint (left side of container).
+     */
+    public static final String WEST   = "West";
+
+    /**
+     * The center layout constraint (middle of container).
+     */
+    public static final String CENTER = "Center";
+    private final float aspectRatio;
+    private final Insets aspectInsets;
+    public AspectLayout(float aspectRatio,Insets aspectInsets) {
+    	this.aspectRatio=aspectRatio;
+    	this.aspectInsets=aspectInsets;
+    }
+
+    /**
+     * Adds the specified component to the layout, using the specified
+     * constraint object.  For border layouts, the constraint must be
+     * one of the following constants:  <code>NORTH</code>,
+     * <code>SOUTH</code>, <code>EAST</code>,
+     * <code>WEST</code>, or <code>CENTER</code>.
+     * <p>
+     * Most applications do not call this method directly. This method
+     * is called when a component is added to a container using the
+     * <code>Container.add</code> method with the same argument types.
+     * @param   comp         the component to be added.
+     * @param   constraints  an object that specifies how and where
+     *                       the component is added to the layout.
+     * @see     java.awt.Container#add(java.awt.Component, java.lang.Object)
+     * @exception   IllegalArgumentException  if the constraint object is not
+     *                 a string, or if it not one of the five specified
+	 *              constants.
+     * @since   JDK1.1
+     */
+    public void addLayoutComponent(Component comp, Object constraints) {
+      synchronized (comp.getTreeLock()) {
+	if ((constraints == null) || (constraints instanceof String)) {
+	    addLayoutComponent((String)constraints, comp);
+	} else {
+	    throw new IllegalArgumentException("cannot add to layout: constraint must be a string (or null)");
+	}
+      }
+    }
+
+    /**
+     * @deprecated  replaced by <code>addLayoutComponent(Component, Object)</code>.
+     */
+    @Deprecated
+    public void addLayoutComponent(String name, Component comp) {
+      synchronized (comp.getTreeLock()) {
+	/* Special case:  treat null the same as "Center". */
+	if (name == null) {
+	    name = "Center";
+	}
+
+	/* Assign the component to one of the known regions of the layout.
+	 */
+	if ("Center".equals(name)) {
+	    center = comp;
+	} else if ("North".equals(name)) {
+	    north = comp;
+	} else if ("South".equals(name)) {
+	    south = comp;
+	} else if ("East".equals(name)) {
+	    east = comp;
+	} else if ("West".equals(name)) {
+	    west = comp;
+	}else {
+	    throw new IllegalArgumentException("cannot add to layout: unknown constraint: " + name);
+	}
+      }
+    }
+
+    /**
+     * Removes the specified component from this border layout. This
+     * method is called when a container calls its <code>remove</code> or
+     * <code>removeAll</code> methods. Most applications do not call this
+     * method directly.
+     * @param   comp   the component to be removed.
+     * @see     java.awt.Container#remove(java.awt.Component)
+     * @see     java.awt.Container#removeAll()
+     */
+    public void removeLayoutComponent(Component comp) {
+      synchronized (comp.getTreeLock()) {
+	if (comp == center) {
+	    center = null;
+	} else if (comp == north) {
+	    north = null;
+	} else if (comp == south) {
+	    south = null;
+	} else if (comp == east) {
+	    east = null;
+	} else if (comp == west) {
+	    west = null;
+	}
+      }
+    }
+
+    /**
+     * Gets the component that was added using the given constraint
+     *
+     * @param   constraints  the desired constraint, one of <code>CENTER</code>,
+     *                       <code>NORTH</code>, <code>SOUTH</code>,
+     *                       <code>WEST</code>, <code>EAST</code>,
+     *                       <code>PAGE_START</code>, <code>PAGE_END</code>,
+     *                       <code>LINE_START</code>, <code>LINE_END</code>
+     * @return  the component at the given location, or </code>null</code> if
+     *          the location is empty
+     * @exception   IllegalArgumentException  if the constraint object is
+     *              not one of the nine specified constants
+     * @see     #addLayoutComponent(java.awt.Component, java.lang.Object)
+     * @since 1.5
+     */
+    public Component getLayoutComponent(Object constraints) {
+	if (CENTER.equals(constraints)) {
+	    return center;
+	} else if (NORTH.equals(constraints)) {
+	    return north;
+	} else if (SOUTH.equals(constraints)) {
+	    return south;
+	} else if (WEST.equals(constraints)) {
+	    return west;
+	} else if (EAST.equals(constraints)) {
+	    return east;
+	}else {
+	    throw new IllegalArgumentException("cannot get component: unknown constraint: " + constraints);
+	}
+    }
+
+
+    /**
+     * Gets the component that corresponds to the given constraint location
+     * based on the target Container's component orientation
+     *
+     * @param   constraints     the desired absolute position, one of <code>CENTER</code>,
+     *                          one of <code>NORTH</code>, <code>SOUTH</code>,
+     *                          <code>EAST</code>, <code>WEST</code>
+     * @param   target     the <code>Container</code> using this <code>BorderLayout</code>
+     * @return  the component at the given location, or </code>null</code> if
+     *          the location is empty
+     * @exception   IllegalArgumentException  if the constraint object is
+     *              not one of the five specified constants
+     * @exception   NullPointerException  if the target parameter is null
+     * @see     #addLayoutComponent(java.awt.Component, java.lang.Object)
+     * @since 1.5
+     */
+    public Component getLayoutComponent(Container target, Object constraints) {
+        Component result = null;
+
+        if (NORTH.equals(constraints)) {
+            result = north;
+        } else if (SOUTH.equals(constraints)) {
+            result = south;
+        } else if (WEST.equals(constraints)) {
+		result = west;
+            
+        } else if (EAST.equals(constraints)) {
+		result = east;
+            
+        } else if (CENTER.equals(constraints)) {
+            result = center;
+	} else {
+	    throw new IllegalArgumentException("cannot get component: invalid constraint: " + constraints);
+        }
+
+        return result;
+    }
+
+
+    /**
+     * Gets the constraints for the specified component
+     *
+     * @param   comp the component to be queried
+     * @return  the constraint for the specified component,
+     *          or null if component is null or is not present
+     *          in this layout
+     * @see #addLayoutComponent(java.awt.Component, java.lang.Object)
+     * @since 1.5
+     */
+    public Object getConstraints(Component comp) {
+	if (comp == center) {
+	    return CENTER;
+	} else if (comp == north) {
+	    return NORTH;
+	} else if (comp == south) {
+	    return SOUTH;
+	} else if (comp == west) {
+	    return WEST;
+	} else if (comp == east) {
+	    return EAST;
+	}
+	return null;
+    }
+
+    /**
+     * Determines the minimum size of the <code>target</code> container
+     * using this layout manager.
+     * <p>
+     * This method is called when a container calls its
+     * <code>getMinimumSize</code> method. Most applications do not call
+     * this method directly.
+     * @param   target   the container in which to do the layout.
+     * @return  the minimum dimensions needed to lay out the subcomponents
+     *          of the specified container.
+     * @see     java.awt.Container
+     * @see     java.awt.BorderLayout#preferredLayoutSize
+     * @see     java.awt.Container#getMinimumSize()
+     */
+    public Dimension minimumLayoutSize(Container target) {
+      synchronized (target.getTreeLock()) {
+	Dimension dim = new Dimension(0, 0);
+
+        Component c = null;
+
+	if ((c=getChild(EAST)) != null) {
+	    Dimension d = c.getMinimumSize();
+	    dim.width += d.width;
+	    dim.height = Math.max(d.height, dim.height);
+	}
+	if ((c=getChild(WEST)) != null) {
+	    Dimension d = c.getMinimumSize();
+	    dim.width += d.width;
+	    dim.height = Math.max(d.height, dim.height);
+	}
+	if ((c=getChild(CENTER)) != null) {
+	    Dimension d = c.getMinimumSize();
+	    dim.width += d.width;
+	    dim.height = Math.max(d.height, dim.height);
+	}
+	if ((c=getChild(NORTH)) != null) {
+	    Dimension d = c.getMinimumSize();
+	    dim.width = Math.max(d.width, dim.width);
+	    dim.height += d.height;
+	}
+	if ((c=getChild(SOUTH)) != null) {
+	    Dimension d = c.getMinimumSize();
+	    dim.width = Math.max(d.width, dim.width);
+	    dim.height += d.height;
+	}
+
+	Insets insets = target.getInsets();
+	dim.width += insets.left + insets.right;
+	dim.height += insets.top + insets.bottom;
+
+	return dim;
+      }
+    }
+
+    /**
+     * Determines the preferred size of the <code>target</code>
+     * container using this layout manager, based on the components
+     * in the container.
+     * <p>
+     * Most applications do not call this method directly. This method
+     * is called when a container calls its <code>getPreferredSize</code>
+     * method.
+     * @param   target   the container in which to do the layout.
+     * @return  the preferred dimensions to lay out the subcomponents
+     *          of the specified container.
+     * @see     java.awt.Container
+     * @see     java.awt.BorderLayout#minimumLayoutSize
+     * @see     java.awt.Container#getPreferredSize()
+     */
+    public Dimension preferredLayoutSize(Container target) {
+      synchronized (target.getTreeLock()) {
+	Dimension dim = new Dimension(0, 0);
+
+        Component c = null;
+
+	if ((c=getChild(EAST)) != null) {
+	    Dimension d = c.getPreferredSize();
+	    dim.width += d.width;
+	    dim.height = Math.max(d.height, dim.height);
+	}
+	if ((c=getChild(WEST)) != null) {
+	    Dimension d = c.getPreferredSize();
+	    dim.width += d.width;
+	    dim.height = Math.max(d.height, dim.height);
+	}
+	if ((c=getChild(CENTER)) != null) {
+	    Dimension d = c.getPreferredSize();
+	    dim.width += d.width;
+	    dim.height = Math.max(d.height, dim.height);
+	}
+	if ((c=getChild(NORTH)) != null) {
+	    Dimension d = c.getPreferredSize();
+	    dim.width = Math.max(d.width, dim.width);
+	    dim.height += d.height;
+	}
+	if ((c=getChild(SOUTH)) != null) {
+	    Dimension d = c.getPreferredSize();
+	    dim.width = Math.max(d.width, dim.width);
+	    dim.height += d.height;
+	}
+
+	Insets insets = target.getInsets();
+	dim.width += insets.left + insets.right;
+	dim.height += insets.top + insets.bottom;
+
+	return dim;
+      }
+    }
+
+    /**
+     * Returns the maximum dimensions for this layout given the components
+     * in the specified target container.
+     * @param target the component which needs to be laid out
+     * @see Container
+     * @see #minimumLayoutSize
+     * @see #preferredLayoutSize
+     */
+    public Dimension maximumLayoutSize(Container target) {
+	return new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE);
+    }
+
+    /**
+     * Returns the alignment along the x axis.  This specifies how
+     * the component would like to be aligned relative to other
+     * components.  The value should be a number between 0 and 1
+     * where 0 represents alignment along the origin, 1 is aligned
+     * the furthest away from the origin, 0.5 is centered, etc.
+     */
+    public float getLayoutAlignmentX(Container parent) {
+	return 0.5f;
+    }
+
+    /**
+     * Returns the alignment along the y axis.  This specifies how
+     * the component would like to be aligned relative to other
+     * components.  The value should be a number between 0 and 1
+     * where 0 represents alignment along the origin, 1 is aligned
+     * the furthest away from the origin, 0.5 is centered, etc.
+     */
+    public float getLayoutAlignmentY(Container parent) {
+	return 0.5f;
+    }
+
+    /**
+     * Invalidates the layout, indicating that if the layout manager
+     * has cached information it should be discarded.
+     */
+    public void invalidateLayout(Container target) {
+    	//do nothing???
+    }
+
+    /**
+     * Lays out the container argument using this border layout.
+     * <p>
+     * This method actually reshapes the components in the specified
+     * container in order to satisfy the constraints of this
+     * <code>BorderLayout</code> object. The <code>NORTH</code>
+     * and <code>SOUTH</code> components, if any, are placed at
+     * the top and bottom of the container, respectively. The
+     * <code>WEST</code> and <code>EAST</code> components are
+     * then placed on the left and right, respectively. Finally,
+     * the <code>CENTER</code> object is placed in any remaining
+     * space in the middle.
+     * <p>
+     * Most applications do not call this method directly. This method
+     * is called when a container calls its <code>doLayout</code> method.
+     * @param   target   the container in which to do the layout.
+     * @see     java.awt.Container
+     * @see     java.awt.Container#doLayout()
+     */
+    public void layoutContainer(Container target) {
+      synchronized (target.getTreeLock()) {
+	Insets insets = target.getInsets();
+	int top = insets.top;
+	int bottom = target.getHeight() - insets.bottom;
+	int left = insets.left;
+	int right = target.getWidth() - insets.right;
+
+        Component c = null;
+
+	if ((c=getChild(NORTH)) != null) {
+	    c.setSize(right - left, c.getHeight());
+	    Dimension d = c.getPreferredSize();
+	    c.setBounds(left, top, right - left, d.height);
+	    top += d.height;
+	}
+	if ((c=getChild(SOUTH)) != null) {
+	    c.setSize(right - left, c.getHeight());
+	    Dimension d = c.getPreferredSize();
+	    c.setBounds(left, bottom - d.height, right - left, d.height);
+	    bottom -= d.height;
+	}
+	if ((c=getChild(EAST)) != null) {
+	    c.setSize(c.getWidth(), bottom - top);
+	    Dimension d = c.getPreferredSize();
+	    c.setBounds(right - d.width, top, d.width, bottom - top);
+	    right -= d.width;
+	}
+	if ((c=getChild(WEST)) != null) {
+	    c.setSize(c.getWidth(), bottom - top);
+	    Dimension d = c.getPreferredSize();
+	    c.setBounds(left, top, d.width, bottom - top);
+	    left += d.width ;
+	}
+	if ((c=getChild(CENTER)) != null) {
+	    c.setBounds(left, top, right - left, bottom - top);
+	}
+      }
+    }
+
+    /**
+     * Get the component that corresponds to the given constraint location
+     *
+     * @param   key     The desired absolute position,
+     *                  either NORTH, SOUTH, EAST, or WEST.
+     * @param   ltr     Is the component line direction left-to-right?
+     */
+    private Component getChild(String key) {
+        Component result = null;
+
+        if (key == NORTH) {
+            result =  north;
+        }
+        else if (key == SOUTH) {
+            result = south;
+        }
+        else if (key == WEST) {
+            result = west;
+        }
+        else if (key == EAST) {
+            result = east;
+        }
+        else if (key == CENTER) {
+            result = center;
+        }
+        if (result != null && !result.isVisible()) {
+            result = null;
+        }
+        return result;
+    }
+}

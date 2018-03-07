@@ -1,0 +1,69 @@
+/*
+ * CREATED ON:    May 2, 2006 6:46:25 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import javax.media.opengl.Threading;
+import javax.swing.SwingUtilities;
+
+import java.lang.reflect.InvocationTargetException;
+
+import cps.jarch.util.misc.Worker;
+import cps.jarch.util.notes.Singleton;
+import cps.jarch.util.notes.ThreadSafe;
+
+/**
+ * <p>TODO document GLWorker, put some checks with Threading
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public @Singleton final class GLWorker extends Worker{
+    private static Worker worker;
+    private static final Object lock = new Object();
+
+    @ThreadSafe public static final Worker getInstance() {
+        // lazy worker creation
+        // first quick test for performance
+        if (worker == null) {
+            synchronized (lock) {
+                // now synchronously do a real check.
+                if (worker == null) 
+                    worker = new GLWorker();
+            }
+        }
+        return worker;
+    }
+    
+    private GLWorker() {
+    	super("GLWorker");
+        // initialize worker
+        worker.setDaemon(true);
+        worker.setPriority(Thread.MIN_PRIORITY + 1);
+        worker.start();
+    }
+    
+    @Override
+    protected void _run(final Runnable r) {
+        try {
+            // execute r synchronously
+            Threading.invokeOnOpenGLThread(new Runnable() {
+                public void run() {
+                    superRun(r);
+                }
+            });
+    }
+
+    // needed to work around inner class access restrictions
+    final void superRun(Runnable r) {
+        super._run(r);
+    }
+    
+    @Override public void checkWorkerRunning() {
+		if (!SwingUtilities.isEventDispatchThread())
+			throw new IllegalStateException("in"
+					+ Thread.currentThread().getName()
+					+ " not EDT or " + this);
+	}
+}

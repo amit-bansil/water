@@ -1,0 +1,21 @@
+/*
+ * CREATED ON:    Apr 16, 2006 10:14:36 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.data;
+
+import ca.odell.glazedlists.EventList;
+import cps.water.simulation.SimModel;
+
+/**
+ * <p>TODO document DataViewerModel
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class DataViewerModel {
+
+	public DataViewerModel(EventList<SimModel> simModels) {
+	}
+
+}

@@ -1,0 +1,172 @@
+/*
+ * ValueTransform.java
+ * CREATED:    May 23, 2005 3:20:58 PM
+ * AUTHOR:     Amit Bansil
+ * PROJECT:    celest-framework-event
+ * 
+ * Copyright 2005 The Center for Polymer Studies,
+ * Boston University, all rights reserved.
+ * */
+package cps.jarch.data.value.tools;
+
+import cps.jarch.data.event.Unlinker;
+import cps.jarch.data.value.RWValue;
+import cps.jarch.data.value.ValueChange;
+import cps.jarch.data.value.ValueLink;
+import cps.jarch.data.value.tools.Converter.ConversionException;
+import cps.jarch.util.misc.LangUtils;
+import cps.jarch.util.misc.LogEx;
+
+/**
+ * A ValueConnection connects two RWValues using a conversion object. This class
+ * avoids circularities caused when in!=convert((unconvert(a)) (often the case
+ * when doing floating point math) by caching the result of transforms. Note
+ * that if the transform is somehow changed one of the push methods should be
+ * executed to bring the two properties values back to a consistent state. A
+ * push should also be called after creation if needed. Since this class is
+ * connected to both of the child values it must be unlinked to delete it
+ * without deleting the values. No special consideration is given to connections
+ * between RWValues that are locked since the internal guarantees they provide should
+ * be sufficient.
+ * 
+ * @author Amit Bansil
+ */
+public abstract class ValueConnection<InType, OutType> implements Unlinker {
+	/**
+	 * when values cannot be converted between input and output a warning is
+	 * logged.
+	 */
+	private static final LogEx<ValueConnection> log = LogEx
+		.createClassLog(ValueConnection.class);
+
+	// ------------------------------------------------------------------------
+	// fields
+	// ------------------------------------------------------------------------
+
+	private final RWValue<InType> in;
+
+	private final RWValue<OutType> out;
+
+	private InType curInValue;
+
+	private OutType curOutValue;
+
+	private final ValueLink<InType> inLink;
+
+	private final ValueLink<OutType> outLink;
+
+	public final InType getCurInValue() {
+		return curInValue;
+	}
+
+	public final OutType getCurOutValue() {
+		return curOutValue;
+	}
+
+	public final RWValue<InType> in() {
+		return in;
+	}
+
+	public final RWValue<OutType> out() {
+		return out;
+	}
+
+	// ------------------------------------------------------------------------
+	// constructor
+	// ------------------------------------------------------------------------
+	private final Converter<InType, OutType> converter;
+
+	public ValueConnection(RWValue<InType> in, RWValue<OutType> out,
+			Converter<InType, OutType> converter) {
+		this.in = in;
+		this.out = out;
+		this.converter = converter;
+		
+		
+		curInValue = in.get();
+		curOutValue = out.get();
+
+		inLink = new ValueLink<InType>() {
+			public void signal(ValueChange<InType> event) {
+
+				InType newAValue = in().get();
+
+				if (LangUtils.equals(newAValue, getCurInValue())) return;
+
+				pushInToOut(newAValue);
+			}
+		};
+
+		outLink = new ValueLink<OutType>() {
+			public void signal(ValueChange<OutType> event) {
+
+				OutType newBValue = out().get();
+
+				if (LangUtils.equals(newBValue, getCurOutValue())) return;
+
+				pushOutToIn(newBValue);
+			}
+		};
+
+		in.connect(inLink);
+		out.connect(outLink);
+	}
+
+	// ------------------------------------------------------------------------
+	// push
+	// ------------------------------------------------------------------------
+
+	public final void pushInToOut() {
+		pushInToOut(ValueConnection.this.in.get());
+	}
+
+	protected final void pushInToOut(InType newInValue) {
+		curInValue = newInValue;
+
+		OutType newOutValue;
+		try {
+			newOutValue = converter.convert(curInValue);
+		} catch (ConversionException e) {
+			log.warning(this,"failed to push new input to out", e);
+			return;
+		}
+
+		if (LangUtils.equals(newOutValue, curOutValue)) return;
+
+		curOutValue = newOutValue;
+
+		ValueConnection.this.out.set(newOutValue);
+
+	}
+
+	public final void pushOutToIn() {
+		pushOutToIn(ValueConnection.this.out.get());
+	}
+
+	protected final void pushOutToIn(OutType newOutValue) {
+		curOutValue = newOutValue;
+
+		InType newInValue;
+		try {
+			newInValue = converter.unconvert(curOutValue);
+		} catch (ConversionException e) {
+			log.warning(this,"failed to push new output to in", e);
+			return;
+		}
+
+		if (LangUtils.equals(newInValue, curInValue)) return;
+
+		curInValue = newInValue;
+
+		ValueConnection.this.in.set(newInValue);
+	}
+
+	// ------------------------------------------------------------------------
+	// unbind
+	// ------------------------------------------------------------------------
+
+	public final void unlink() {
+		in.disconnect(inLink);
+		out.disconnect(outLink);
+	}
+}

@@ -1,0 +1,18 @@
+/*
+ * CREATED:    Jul 21, 2004
+ * AUTHOR:     Amit Bansil
+ * 
+ * Copyright 2004 The Center for Polymer Studies,
+ * Boston University, all rights reserved.
+ * */
+package cps.jarch.data.value;
+
+import cps.jarch.data.event.GenericLink;
+
+/**
+ * just a shorthand...
+ * @param <T> 
+ */
+public interface ValueLink<T> extends GenericLink<ValueChange<T>>{
+    //empty
+}

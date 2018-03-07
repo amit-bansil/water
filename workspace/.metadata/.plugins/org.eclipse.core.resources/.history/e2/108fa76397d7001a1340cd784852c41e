@@ -1,0 +1,15 @@
+/*
+ * CREATED ON:    Apr 29, 2006 10:55:00 AM
+ * CREATED BY:    Amit Bansil 
+ */
+/**
+ * <p>TODO document test
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class test {
+	private final String aba="aba"; //$NON-NLS-1$
+	private final String zaba=Messages.getString("test.0"); //$NON-NLS-1$
+	private final String waba="waba";
+}

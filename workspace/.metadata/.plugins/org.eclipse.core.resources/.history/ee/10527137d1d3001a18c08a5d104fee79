@@ -1,0 +1,14 @@
+/*
+ * CREATED ON:    Apr 24, 2006 4:27:43 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+/**
+ * <p>TODO document SnapshotRenderer
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class SnapshotRenderer {
+
+}

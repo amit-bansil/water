@@ -1,0 +1,320 @@
+/*
+ * CompositeSaveableData.java
+ * CREATED:    Jan 26, 2005 8:03:37 PM
+ * AUTHOR:     Amit Bansil
+ * PROJECT:    CELEST-Framework-event
+ * 
+ * Copyright 2005 The Center for Polymer Studies,
+ * Boston University, all rights reserved.
+ * */
+package cps.jarch.data.io;
+
+import cps.jarch.data.event.GenericLink;
+import cps.jarch.data.event.tools.SimpleLink;
+import cps.jarch.util.misc.LangUtils;
+import cps.jarch.util.misc.LogEx;
+import cps.jarch.util.misc.StringUtils;
+import cps.jarch.util.notes.Nullable;
+
+import java.io.IOException;
+import java.util.EmptyStackException;
+import java.util.EventObject;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Builder for creating {@link cps.jarch.data.io.SaveableData} composed
+ * of several "children." <br>
+ * 
+ * supports backward (but not forward) compatibility through
+ * <code>regObsolete</code>: during reading, the corresponding data object is
+ * looked up based on its name; standard data should just be registered as a
+ * child and is found and read. children that are no longer used should be
+ * registered as obsolete and will be ignored during reading. if no matching
+ * obsolete or child objects are found it is an error. If, during reading, no
+ * data is found in the input stream for a child it is initialized with
+ * loadInitial(). <br>
+ * 
+ * CompositeDataBuilder's can also be used to log changes to there child data
+ * objects using the traceChildChanges() method.<br>
+ * 
+ * note <code>loadBlank</code> is not necessarily called on startup. <br>
+ * 
+ * each child <code>SaveableData</code> can be registered only once and must
+ * have a unique name as either a standard child or obsolete, thus preventing
+ * its reading/writing more than once during an IO cycle. <br>
+ * Note code is optimized for reading from current version <br>
+ * Also note locking.
+ * 
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public final class CompositeDataBuilder {
+	private static final LogEx<CompositeDataBuilder> log = LogEx
+		.createClassLog(CompositeDataBuilder.class);
+	// ------------------------------------------------------------------------
+	private LogEx traceLog;
+	private Object traceObj;
+	/**
+	 * enable tracing of changes that are or will be registered as children of
+	 * this. changes are logged to <code>l</code> with parent
+	 * <code>traceObj</code> at debug level.
+	 * 
+	 * @throws IllegalStateException
+	 *             if traceChildChanges already called once on this.
+	 * 
+	 */
+	public final <T> void traceChildChanges(LogEx<T> l,@Nullable T traceObj) {
+		LangUtils.checkArgNotNull(l);
+		// run once
+		if (traceLog==null) throw new IllegalStateException("tracing already enabled");
+		// all future children will now automatically have tracing enabled by
+		// regXXX
+		traceLog=l;
+		this.traceObj=traceObj;
+		// enable tracing for any previous children
+		for (Map.Entry<String, SaveableData> e : dataMap.entrySet())
+			enableTracing(e.getValue(), e.getKey());
+		for (Map.Entry<String, SaveableData> e : obsoleteMap.entrySet())
+			enableTracing(e.getValue(), e.getKey());
+	}
+	@SuppressWarnings("unchecked") private final void enableTracing(final SaveableData d,
+			final String name) {
+		traceLog.debug(traceObj, "child {0} registered: {1}", name, d);
+		d.connect(new SimpleLink() {
+			public void receive(EventObject event) {
+				traceLog.debug(traceObj, "child {0} changed: {1}", name, event);
+			}
+		});
+	}
+	// ------------------------------------------------------------------------
+	// members
+	private final Map<String, SaveableData> dataMap;
+
+	private final Map<String, SaveableData> obsoleteMap;
+
+	private final Set<String> usedNames;
+
+	private final Set<SaveableData> usedData;
+	/**
+	 * creates CompositeDataBuilder.
+	 * @param initialSize expected number of children, for performance only
+	 */
+	public CompositeDataBuilder(int initialSize) {
+		dataMap = new HashMap<String, SaveableData>(initialSize);
+
+		obsoleteMap = new HashMap<String, SaveableData>(initialSize);
+
+		usedNames = new HashSet<String>(initialSize);
+		usedData = new HashSet<SaveableData>(initialSize);
+	}
+	
+	// ------------------------------------------------------------------------
+	// registration
+	// ------------------------------------------------------------------------
+	public final void regChild(SaveableDataProxy d, String name) {
+		regChild(d.getData(), resolveName(name));
+	}
+
+	public final void regChild(SaveableData d, String name) {
+		name=resolveName(name);
+		log.debugEnter(this, "d, name", d, name);
+		if (!usedNames.add(name))
+			throw new IllegalArgumentException("name used twice");
+		if (!usedData.add(d))
+			throw new IllegalArgumentException("data used twice");
+		dataMap.put(name, d);
+		if(traceLog!=null) enableTracing(d, name);
+	}
+
+	public final void regObsolete(SaveableData d, String name) {
+		name=resolveName(name);
+		log.debugEnter(this, "d, name", d, name);
+		if (!usedNames.add(name))
+			throw new IllegalArgumentException("name used twice");
+		if (!usedData.add(d))
+			throw new IllegalArgumentException("data used twice");
+		obsoleteMap.put(name, d);
+		if(traceLog!=null) enableTracing(d, name);
+	}
+
+	private final String resolveName(String name) {
+		if(StringUtils.isBlank(name))
+			throw new IllegalArgumentException("name must not be blank");
+		
+		return prefix+name;
+	}
+	private String prefix="";
+	/**
+	 * adds <code>prefix</code> before the name of any subsequently registered
+	 * children in addition to any previous prefix. used to prevent name
+	 * conflicts when a subclass is using its parent
+	 * <code>CompositeDataBuilder</code>.
+	 * 
+	 * @throws IllegalArgumentException
+	 *             if <code>prefix</code> contains a '.' character.
+	 */
+	public final void pushPrefix(String prefix) {
+		if(prefix.indexOf('.')!=-1)throw new IllegalArgumentException(
+			"prefixes may not contain dots");
+		this.prefix=this.prefix+prefix+'.';
+	}
+	/**
+	 * stop adding the last prefix pushed.
+	 * @throws EmptyStackException
+	 *             if prefix stack is empty
+	 */
+	public final void popPrefix() {
+		if(StringUtils.isBlank(prefix))
+			throw new EmptyStackException();
+		int newLastDot=prefix.substring(0,prefix.length()-1).indexOf('.');
+		prefix=prefix.substring(0,newLastDot+1);
+	}
+	
+	// ------------------------------------------------------------------------
+	// building
+	// ------------------------------------------------------------------------
+
+	private static final int DATA01_KEY = 1;
+
+	private static final String DATA_NAME = "compositeData";
+
+	private final class CompositeSaveableData implements SaveableData {
+		// data we'll be saving
+		private final Map<String, SaveableData> obsoleteData;
+
+		private final SaveableData[] data;
+
+		private final String[] dataNames;
+
+		public CompositeSaveableData() {
+			// copy dataMap to an arrays
+			Set<Map.Entry<String, SaveableData>> dataSet = dataMap.entrySet();
+			int i = 0;
+			data = new SaveableData[dataSet.size()];
+			dataNames = new String[dataSet.size()];
+			for (Map.Entry<String, SaveableData> d : dataSet) {
+				data[i] = d.getValue();
+				dataNames[i] = d.getKey();
+				i++;
+			}
+
+			// copy obsoleteDataMap
+			obsoleteData = new HashMap<String, SaveableData>(obsoleteMap);
+		}
+
+		public final void loadInitial() {
+			log.debugEnter(CompositeDataBuilder.this);
+			for (SaveableData d : data)
+				d.loadInitial();
+		}
+
+		public void write(ObjectOutputStreamEx out) throws IOException {
+			log.debug(CompositeDataBuilder.this,"writing {0} children"+data.length);
+			out.beginSection(DATA_NAME, DATA01_KEY);
+			out.writeInt(data.length);
+			for (int i = 0; i < dataNames.length; i++) {
+				out.writeUTF(dataNames[i]);
+				data[i].write(out);
+			}
+			out.endSection(DATA_NAME);
+			log.debugReturnVoid(CompositeDataBuilder.this);
+		}
+
+		/**
+		 * read loads the data from an input stream into each child data using
+		 * that childs readMethod. If no data for a section is found
+		 * data.loadInitial is called. If a section of data is encountered that
+		 * is not associated with a data object the obsoleteData map is
+		 * searched. If still no data is found an IOException is thrown.
+		 */
+        //TODO breakapart
+//        @SuppressWarnings({"OverlyLongMethod"})
+        public void read(ObjectInputStreamEx in) throws IOException {
+			log.debugEnter(CompositeDataBuilder.this);
+			in.beginSection(DATA_NAME, DATA01_KEY);
+			// number of data sections to read from in
+			int inLength = in.readInt();
+			// names of data sections read in order
+			Set<String> dataReadOutOfOrder = new HashSet<String>();
+			// data sections from 0 to dataReadInOrder+1 have been read
+			int dataReadInOrder = 0;
+			// read inLength sections from in
+			for (int i = 0; i < inLength; i++) {
+				// get dataName
+				String dataName = in.readUTF();
+				// try sequential reading first
+				if (dataName.equals(dataNames[dataReadInOrder])) {
+					// if we have a match read it and continue
+					data[dataReadInOrder].read(in);
+					dataReadInOrder++;
+					continue;
+				}
+				boolean found = false;
+				// out of order reading
+				// now search unread data sections
+				for (int n = dataReadInOrder + 1; n < data.length; n++) {
+					if (dataNames[n].equals(dataName)) {
+						data[n].read(in);
+						found = true;
+						break;
+					}
+				}
+				if (!found) {
+					// finally try obsolete data
+					SaveableData match = obsoleteData.get(dataName);
+					if (match != null) {
+						match.read(in);
+					} else {
+						// if this fails we're in trouble
+						throw new IOException("unexpected section name:"
+								+ dataName);
+					}
+				}
+				// remember names of sections read out of order
+				dataReadOutOfOrder.add(dataName);
+			}
+			for (int i = dataReadInOrder; i < data.length; i++) {
+				if (!dataReadOutOfOrder.contains(dataNames[i]))
+					data[i].loadInitial();
+			}
+			in.endSection(DATA_NAME);
+
+		}
+
+		/**
+		 * broadcast l to all children so that it will be notified of changes to
+		 * any child data. <br>
+		 * OPTIMIZE since data often changes together it is best to use a lazy
+		 * listener proxied through if we have more then some threshold of
+		 * children or listeners <br>
+		 * this might result in differnt behavior very unpredictibly <br>
+		 * 
+		 * note- depends on the data being constant and no access to the
+		 * listeners <br>
+		 */
+		public void connect(GenericLink<? super EventObject> l) {
+			log.debugEnter(CompositeDataBuilder.this, "l", l);
+			for (SaveableData d : data)
+				d.connect(l);
+		}
+
+		public void disconnect(GenericLink<? super EventObject> l) {
+			log.debugEnter(CompositeDataBuilder.this, "l", l);
+			for (SaveableData d : data)
+				d.disconnect(l);
+		}
+	}
+	/**
+	 * Create <code>SaveableData</code> that performs io ops on the current
+	 * set of children registered. Usually called after all children are
+	 * registered since any additional children registered will NOT be saved by
+	 * this object, instead a new one must be created.
+	 */
+	public SaveableData create() {
+		log.debugEnter(this);
+		return new CompositeSaveableData();
+	}
+}

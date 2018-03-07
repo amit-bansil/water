@@ -1,0 +1,47 @@
+/*
+ * CREATED ON:    Apr 16, 2006 10:22:19 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water;
+
+import cps.jarch.simulation.snapshot.SnapshotsModel;
+import cps.jarch.util.misc.Worker;
+import cps.water.data.DataViewerModel;
+import cps.water.simulation.SimConfig;
+
+/**
+ * <p>
+ * Holds state of entire application. Meant to be accessed by EDT only except
+ * where noted. Handles snapshot logic.
+ * </p>
+ * 
+ * @version $Id$
+ * @author Amit Bansil
+ */
+//TODO IO
+public class AppModel extends SnapshotsModel<Model>{
+	//fields
+	private final DataViewerModel dataViewer1Model,dataViewer2Model;
+	
+	//field getters
+	public final DataViewerModel getDataViewer1Model() {
+		return dataViewer1Model;
+	}
+
+	public final DataViewerModel getDataViewer2Model() {
+		return dataViewer2Model;
+	}
+
+	// ------------------------------------------------------------------------
+	//constructor
+	private final Worker simWorker;
+	public AppModel(Worker simWorker) {
+		this.simWorker=simWorker;
+		dataViewer1Model=new DataViewerModel(snapshots());
+		dataViewer2Model=new DataViewerModel(snapshots());
+	}
+
+	@Override public Model createEmpty() {
+		return new Model(SimConfig.getIce24(),simWorker);
+	}
+}

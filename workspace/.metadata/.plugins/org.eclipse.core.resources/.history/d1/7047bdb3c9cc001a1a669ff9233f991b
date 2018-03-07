@@ -1,0 +1,233 @@
+// Decompiled by DJ v3.2.2.67 Copyright 2002 Atanas Neshkov  Date: 8/28/02 3:39:07 PM
+// Home Page : http://members.fortunecity.com/neshkov/dj.html  - Check often for new version!
+// Decompiler options: packimports(3) 
+// Source File Name:   IInternalData.java
+
+package Intermol3D;
+
+import cps.water.simulation.InternalData;
+import cps.water.simulation.ShakeFailException;
+
+import javax.vecmath.Point3f;
+import javax.vecmath.Tuple3f;
+
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+
+// Referenced classes of package Intermol3D:
+//            IData, FullIconfig, IConfig, InternalData, 
+//            IonData, ObjLib, ShakeFailException, Const
+
+public final class IInternalData extends IData
+{
+
+    public void fullSave(OutputStream os)
+        throws IOException
+    {
+        FullIconfig.save(raw, os);
+    }
+
+    public void fullSave(DataOutputStream os)
+        throws IOException
+    {
+        FullIconfig.save(raw, os);
+    }
+
+    public void save(OutputStream os)
+        throws IOException
+    {
+        IConfig.save(raw, os);
+    }
+
+    public void save(DataOutputStream os)
+        throws IOException
+    {
+        IConfig.save(raw, os);
+    }
+
+    public void removeIons()
+    {
+        raw.remove_ion();
+        super.removeIons();
+    }
+
+    public boolean addIon(IonData dat)
+    {
+        boolean v = raw.insert_ion(dat);
+        if(v)
+            super.addIon(dat);
+        return v;
+    }
+
+    public boolean addIon(IonData dat, Point3f ionPos)
+    {
+        super.addIon(dat);
+        raw.insert_ion(dat, ((Tuple3f) (ionPos)).x, ((Tuple3f) (ionPos)).y, ((Tuple3f) (ionPos)).z);
+        return true;
+    }
+
+    public int[] generatePeMatrix(IonData data, int latRes, double cut, float x)
+    {
+        return raw.generatePeLandscape(1, data.name, latRes, cut, x);
+    }
+
+    public int getNumBonds()
+    {
+        return raw.hbonds;
+    }
+
+    public Point3f getBoundsSize()
+    {
+        return new Point3f((float)raw.bx, (float)raw.by, (float)raw.bz);
+    }
+
+    public void setMode(int m)
+    {
+        super.mode = m;
+        switch(super.mode)
+        {
+        case 0: // '\0'
+            raw.kpres = true;
+            raw.ktemp = true;
+            break;
+
+        case 1: // '\001'
+            raw.kpres = false;
+            raw.ktemp = true;
+            break;
+
+        case 2: // '\002'
+            raw.kpres = true;
+            raw.ktemp = false;
+            break;
+
+        case 3: // '\003'
+            raw.kpres = false;
+            raw.ktemp = false;
+            break;
+        }
+    }
+
+    public boolean getJumped(int mol, int fld)
+    {
+        return raw.jumped[mol][fld];
+    }
+
+    public double getPressure()
+    {
+        return raw.apres;
+    }
+
+    public void setPressure(double value)
+    {
+        raw.setpressure(value);
+    }
+
+    public double getTemp()
+    {
+        return raw.atemp;
+    }
+
+    public void setTemp(double value)
+    {
+        raw.setemperature(value);
+    }
+
+    public double getEnergy()
+    {
+        return 0.0D;
+    }
+
+    public void setEnergy(double d)
+    {
+    }
+
+    public double getDensity()
+    {
+        return raw.arho;
+    }
+
+    public void setDensity(double value)
+    {
+        raw.setdensity(value);
+    }
+
+    public double getTemperature2()
+    {
+        return raw.temp;
+    }
+
+    public double getDensity2()
+    {
+        return raw.rho;
+    }
+
+    public double getPressure2()
+    {
+        return raw.pres;
+    }
+
+    public double getPE2()
+    {
+        return raw.epot;
+    }
+
+    public double getKE2()
+    {
+        return raw.ekin;
+    }
+
+    public double getTotalEnergy2()
+    {
+        return raw.eges;
+    }
+
+    public IInternalData()
+    {
+        trunning = false;
+        super.ve = raw.ve;
+        super.xni = raw.xni;
+        super.yni = raw.yni;
+        super.zni = raw.zni;
+        super.rn = raw.rn;
+        super.potH2O = raw.potH2O;
+        super.indxww = raw.indxww;
+        clear();
+    }
+
+    public void step()
+        throws ShakeFailException
+    {
+        for(int i = 0; i < super.frameSteps; i++)
+        {
+            raw.step();
+            setFNum(getFNum() + 1);
+        }
+
+        ObjLib.boundsSize = getBoundsSize();
+    }
+
+    public void clear()
+    {
+        setFNum(0);
+        raw.clear();
+        super.ions = null;
+        if(Const.config != null)
+            Const.config.toData(raw);
+        else
+            raw.loadNMolDef(IData.numMols);
+        IData.numMols = raw.mols;
+        raw.initial();
+        raw.tempav = raw.atemp;
+        raw.presav = raw.apres;
+        raw.rho = raw.arho;
+        raw.hbonds = 0;
+        ObjLib.boundsSize = getBoundsSize();
+        if(Const.config != null)
+            Const.config.toData(raw);
+    }
+
+    private final InternalData raw = new InternalData();
+    public boolean trunning;
+}

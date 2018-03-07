@@ -1,0 +1,35 @@
+/*
+ * CREATED:    Jul 18, 2004
+ * AUTHOR:     Amit Bansil
+ * 
+ * Copyright 2004 The Center for Polymer Studies,
+ * Boston University, all rights reserved.
+ * */
+package cps.jarch.data.value;
+
+import java.util.EventObject;
+
+//TODO kill this event, it is better to track old/new value in the link itself
+/**
+ * @param <T> 
+ */
+public class ValueChange<T> extends EventObject{
+	private final T oldValue,newValue;
+	
+    public ValueChange(ROValue<T> source,T oldValue,T newValue){
+        super(source);
+        this.oldValue=oldValue;
+        this.newValue=newValue;
+    }
+    public final T getOldValue(){
+        return oldValue;
+    }
+    public final T getNewValue(){
+        return newValue;
+    }
+    
+    @Override public final String toString() {
+		return "ValueChangeEvent:[oldValue=" + oldValue + ",newValue=" + newValue
+				+ ",source=" + source + "]";
+	}
+}

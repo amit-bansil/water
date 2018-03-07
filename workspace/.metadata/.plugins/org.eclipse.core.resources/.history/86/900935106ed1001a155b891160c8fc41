@@ -1,0 +1,53 @@
+/*
+ * CREATED ON:    Apr 20, 2006 1:17:24 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water;
+
+import cps.jarch.data.value.ROValue;
+import cps.jarch.data.value.RWValue;
+import cps.jarch.gui.data.BooleanBinder;
+
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
+import javax.swing.JToggleButton;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.event.ActionListener;
+
+/**
+ * <p>TODO document ControlFactory
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+//TODO build icons right in here, add tooltips later
+public class ControlFactory {
+	public static final JToggleButton createVisibilityToggle(Component c,String name) {
+		return createToggleButton(,name);
+	}
+	public static final JToggleButton createToggleButton(RWValue<Boolean> src,String name) {
+		
+	}
+	public static final JButton createToolbarButton(String name,ActionListener al) {
+		JButton ret=new JButton(name);
+		ret.addActionListener(al);
+		return ret;
+	}
+	//TODO hack these buttons together in photoshop so they look like itunes buttons
+	public static final JButton createImportantButton(String name,ActionListener al) {
+		JButton ret=createToolbarButton(name, al);
+		ret.setBackground(Color.WHITE);
+		return ret;
+	}
+	private static final JCheckBox createCheckBox(String title,RWValue<Boolean> target) {
+		JCheckBox ret=new JCheckBox(title);
+		BooleanBinder.bindCheckBox(target,ret);
+		return ret;
+	}
+	public static final void bindEnabled(JComponent source,ROValue<Boolean> target) {
+		BooleanBinder.bindEnabled(c, src);
+	}
+}

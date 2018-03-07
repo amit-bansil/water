@@ -1,0 +1,6 @@
+#Tue May 02 20:30:06 EDT 2006
+description.maxfilestatesize=104857600
+version=1
+eclipse.preferences.version=1
+description.maxfilestates=10000
+description.filestatelongevity=8640000000000000000

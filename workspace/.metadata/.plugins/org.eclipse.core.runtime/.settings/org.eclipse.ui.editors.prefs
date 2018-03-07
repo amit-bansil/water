@@ -1,0 +1,14 @@
+#Tue May 02 00:07:55 EDT 2006
+lineNumberRuler=true
+quickdiff.defaultProvider=org.tigris.subversion.subclipse.quickdiff.providers.SVNReferenceProvider
+spellingIndicationColor=128,255,128
+changeIndicationInOverviewRuler=true
+deletionIndicationInOverviewRuler=true
+warningIndicationColor=255,255,128
+spellingEnabled=true
+printMargin=true
+additionIndicationInOverviewRuler=true
+eclipse.preferences.version=1
+isOccurrenceGoToNextNavigationTarget=true
+printMarginColumn=90
+overviewRuler_migration=migrated_3.1

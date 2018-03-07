@@ -1,0 +1,52 @@
+/*
+ * CREATED ON:    Apr 14, 2006 4:02:41 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water;
+
+import ca.odell.glazedlists.EventList;
+import cps.jarch.util.misc.Worker;
+import cps.water.simulation.SimModel;
+
+import javax.swing.SwingUtilities;
+
+import java.lang.reflect.InvocationTargetException;
+
+/**
+ * <p>TODO document Application
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class Application {
+	private final Worker simulationWorker;
+	private final GUI gui;
+	
+	private final EventList<SimModel> simModels;
+	
+	public Application() {
+	}
+	public final void show() {
+	}
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		//run on EDT
+		try {
+			SwingUtilities.invokeAndWait(new Runnable() {
+				public void run() {
+					//TODO: show splashscreen,parse input files/parameters
+					new Application().show();
+				}
+			});
+		} catch (InterruptedException e) {
+			//should not happen
+			throw new Error(e);
+		} catch (InvocationTargetException e) {
+			//should not happen
+			throw new Error(e);
+		}
+	}
+
+}

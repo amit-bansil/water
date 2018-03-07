@@ -1,0 +1,33 @@
+/*
+ * CREATED ON:    Apr 20, 2006 1:17:24 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water;
+
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JToggleButton;
+
+import java.awt.Component;
+
+/**
+ * <p>TODO document ControlFactory
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+//TODO build icons right in here, add tooltips later
+public class ControlFactory {
+	public static final JToggleButton createVisibilityToggle(Component c,String name) {
+		
+	}
+	public static final JButton createToolbarButton(String name) {
+		
+	}
+	public static final JButton createImportantButton(String name) {
+		
+	}
+	private static final JCheckBox createCheckBox(String title,RWValue<Boolean> value) {
+		
+	}
+}

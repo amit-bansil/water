@@ -1,0 +1,384 @@
+/*
+ * SimulationGUI.java
+ * CREATED:    Feb 2, 2005 4:55:43 AM
+ * AUTHOR:     Amit Bansil
+ * PROJECT:    CELEST-Framework-simulation
+ * 
+ * Copyright 2005 The Center for Polymer Studies,
+ * Boston University, all rights reserved.
+ * */
+package cps.jarch.simulation;
+
+import cps.jarch.application.gui.GUIManager;
+import cps.jarch.data.event.tools.SimpleLink;
+import cps.jarch.data.io.CompositeDataBuilder;
+import cps.jarch.data.io.SaveableData;
+import cps.jarch.data.io.SaveableDataProxy;
+import cps.jarch.data.value.ROValue;
+import cps.jarch.data.value.RWValue;
+import cps.jarch.data.value.ValueLink;
+import cps.jarch.data.value.ValueChange;
+import cps.jarch.data.value.tools.RWValueImp;
+import cps.jarch.gui.builder.ButtonFactory;
+import cps.jarch.gui.components.CELESTLook;
+import cps.jarch.gui.components.CustomBoxLayout;
+import cps.jarch.gui.components.LinkButton;
+import cps.jarch.gui.data.BooleanBinder;
+import cps.jarch.gui.resources.ResourceAccessor;
+import cps.jarch.gui.util.ComponentProxy;
+import cps.jarch.util.misc.NotImplementedException;
+import cps.jarch.util.misc.NullArgumentException;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.JTabbedPane;
+import javax.swing.ScrollPaneConstants;
+
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.util.ArrayList;
+import java.util.EventObject;
+import java.util.List;
+//nice to do little gif animated icons,
+// for example on the editor headers rip the icon from the alloy header
+// and spin it up and down as you hide/show the headers
+// (maybe just rotate the arrow?)
+// controls can enable/disable themseves w/ a fade in/out
+// and (best) create a custom 'reactive' container
+// that can have its child slide out from under the header
+// or the left of the main panel
+public class SimulationGUI implements SaveableDataProxy {
+	// ------------------------------------------------------------------------
+	// editors- panels stacked vertically on right of screen
+	private final JComponent editors;
+
+	private final CELESTLook look = CELESTLook.getInstance();
+
+	private RWValueImp<Boolean> lastVisProp;
+
+	// adds an editor that has no title/ or break.
+	public final void addEditor(String name, ComponentProxy component,
+			Boolean initialVis) {
+		addEditor(name, component.getComponent(), initialVis);
+	}
+
+	public final void addEditor(String name, Component component,
+			Boolean initialVis) {
+		//throw new NotImplementedException();
+		final RWValueImp<Boolean> prop = new RWValueImp<Boolean>(
+			initialVis);
+
+		LinkButton vb = createVisibiltyButton(name, prop,component);
+
+		
+		dataBuilder.regChild(prop, name);
+		
+		if (lastVisProp != null) {
+			// the extra padding on the bottom of each component should only be
+			// shown
+			// when that component is visible and not be added to the last
+			// component
+			Component componentBottomBorder = Box.createVerticalStrut(look
+				.getLargePadSize());
+			BooleanBinder.bindVisible(lastVisProp, componentBottomBorder);
+			editors.add(componentBottomBorder);
+
+			editors.add(Box.createVerticalStrut(look.getMediumPadSize()));
+			editors.add(new JSeparator());
+			editors.add(Box.createVerticalStrut(look.getSmallPadSize()));
+		}
+		editors.add(vb);
+
+		Component componentTopBorder = Box.createVerticalStrut(look
+			.getMediumPadSize());
+		editors.add(componentTopBorder);
+		editors.add(component);
+
+		BooleanBinder.bindVisible(prop, componentTopBorder);
+
+		lastVisProp = prop;
+	}
+
+	// ------------------------------------------------------------------------
+	// canvases- panels in middle of screen, shown 1 at a time
+	// lists for trackings canvases
+	private final List<String> canvasTitles = new ArrayList<String>();
+	private final List<String> canvasNames= new ArrayList<String>();
+	private final List<JComponent> canvasComponents = new ArrayList<JComponent>();
+
+	// container holding components in tabbed mode
+	private final JTabbedPane tabbedCanvases;
+
+	// container holding components in full screen mode
+	private final Container fullScreenCanvases;
+
+	private final CardLayout fullScreenCanvasesLayout;
+
+	// canvas showing on screen- not updated when tabbed
+	private JComponent currentCanvas;
+
+	public final void addCanvas(String name, ComponentProxy c) {
+		addCanvas(name, c.getComponent());
+	}
+
+	private ButtonFactory buttonFactory;
+	public final void addCanvas(String name, JComponent c) {
+		//throw new NotImplementedException();
+		// require title & c notnull, and c not yet added
+		if (canvasComponents.contains(c))
+			throw new IllegalArgumentException("c already added");
+		NullArgumentException.check(c, "component");
+		NullArgumentException.check(name, "title");
+		// register c & title
+		String title = name;//buttonFactory.loadTitle(name);
+		canvasTitles.add(title);
+		canvasNames.add(name);
+		canvasComponents.add(c);
+		// add c to proper panel
+		_addCanvas(c, title);
+	}
+
+	/*
+	 * public static final JTabbedPane testPane=new JTabbedPane(); static{
+	 * JFrame test=new JFrame("test"); test.setContentPane(testPane); }
+	 */
+	//TODO wrap c with a component that has the proper bounds might be
+	//more efficent but somehow a tab will go blank sometimes
+	//when returning from fullscreen
+	//NOTE this is caused by CardLayout and TabbedLayout
+	//playing with the visibilty of components, be careful about this.
+	private final void _addCanvas(JComponent c, String title) {
+		look.markOrphan(c);
+		if (!fullScreen().get()) {
+			 int amt=look.getLargePadSize();
+			 c.setBorder(BorderFactory.createEmptyBorder(amt,amt,amt,amt));
+			 tabbedCanvases.addTab(title, c);
+		} else {
+			c.setBorder(null);
+			fullScreenCanvases.add(c, Integer.toString(c.hashCode()));
+		}
+	}
+
+	public final void showCanvas(ComponentProxy c) {
+		showCanvas(c.getComponent());
+	}
+
+	public final void showCanvas(JComponent c) {
+		if(currentCanvas!=null) look.markOrphan(currentCanvas);
+		currentCanvas = c;
+		int i=canvasComponents.indexOf(c);
+		if (i==-1)
+			throw new IllegalArgumentException("c not added");
+		look.unmarkOrphan(c);
+		canvasName.set(canvasNames.get(i));
+		if (!fullScreen().get()) {
+			tabbedCanvases.setSelectedIndex(i);
+		} else {
+			fullScreenCanvasesLayout.show(fullScreenCanvases, Integer
+				.toString(c.hashCode()));
+		}
+	}
+
+	// called to rebuild canavsholder when full screen changed
+	// TODO progress for fullscreen update
+	private final void updateFullScreen() {
+
+		// if was in tabbed mode update currentCanvas since user could have
+		// switched it
+		if (tabbedCanvases.getComponentCount() != 0) {
+			currentCanvas = canvasComponents.get(tabbedCanvases
+				.getSelectedIndex());
+		}
+
+		// rebuild proper canvasholder
+		fullScreenCanvases.removeAll();
+		for (int i = tabbedCanvases.getTabCount() - 1; i >= 0; i--) {
+			tabbedCanvases.removeTabAt(i);
+		}
+		for (int i = 0; i < canvasComponents.size(); i++) {
+			JComponent c = canvasComponents.get(i);
+			String title = canvasTitles.get(i);
+			_addCanvas(c, title);
+		}
+		updateContentPanel();
+
+		// update currentcavnas
+		if (currentCanvas != null) showCanvas(currentCanvas);
+	}
+
+	// if we're in full screen mode
+	public final RWValue<Boolean> fullScreen() {
+		return guiManager.fullScreen();
+	}
+	//TODO we should keep the showing canvas null during building so that canvasName is correct.
+	private final RWValue<String> canvasName=new RWValueImp<String>();
+	public ROValue<String> canvas() {
+		return canvasName;
+	}
+	// ------------------------------------------------------------------------
+
+	private final GUIManager guiManager;
+
+	private final JPanel mainContent;
+
+	// update the ui's contentpane based on fullscreen
+	private final void updateContentPanel() {
+		// set correct content pane
+		if (fullScreen().get()) {
+			guiManager.setContentPane(fullScreenCanvases);
+		} else {
+			guiManager.setContentPane(mainContent);
+		}
+	}
+
+	public SimulationGUI(GUIManager guiManager, ResourceAccessor res) {
+		this.guiManager = guiManager;
+		dataBuilder = new CompositeDataBuilder(15);
+		// setup editors
+		editors = new JPanel();
+		editors.setLayout(new CustomBoxLayout(editors, BoxLayout.Y_AXIS));
+
+		final JPanel editorsHolder = new JPanel(new BorderLayout(0, 0));
+		editorsHolder.add(editors, BorderLayout.NORTH);
+
+		final JScrollPane editorsScrollPanel = new JScrollPane(editorsHolder,
+			ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+			ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER) {
+			// prefer extra width so that editors still fit when scrolling
+			@Override
+			public Dimension getPreferredSize() {
+				Dimension prefSize = super.getPreferredSize();
+				if (prefSize == null) return null;
+				Dimension vsbPref = getVerticalScrollBar().getPreferredSize();
+				if (vsbPref == null) return prefSize;
+				else return new Dimension(prefSize.width + vsbPref.width,
+					prefSize.height);
+			}
+		};
+		// editors have small border on left of scrollbar if scrollbar visible
+		editorsScrollPanel.getVerticalScrollBar().addComponentListener(
+			new ComponentAdapter() {
+				@Override
+				public void componentShown(ComponentEvent e) {
+					editorsHolder.setBorder(BorderFactory.createEmptyBorder(0,
+						0, 0, look.getSmallPadSize()));
+				}
+
+				@Override
+				public void componentHidden(ComponentEvent e) {
+					editorsHolder.setBorder(BorderFactory.createEmptyBorder(0,
+						0, 0, 0));
+				}
+			});
+
+		// remove blackline around editors, but have some right margin
+
+		editorsScrollPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0,
+			look.getLargePadSize()));
+
+		// setup canaves
+		tabbedCanvases = new JTabbedPane();
+		fullScreenCanvases = new JPanel(
+			fullScreenCanvasesLayout = new CardLayout(0, 0));
+		// LayoutUtils.MED_PAD
+		// create main layout
+		mainContent = new JPanel(new BorderLayout(0, 0));
+		mainContent.add(tabbedCanvases);
+		mainContent.add(editorsScrollPanel, BorderLayout.WEST);
+
+		// setup content panel
+		updateContentPanel();
+
+		// bind full screen property
+		fullScreen().connect(new SimpleLink() {
+			public void receive(EventObject event) {
+				updateFullScreen();
+			}
+		});
+	}
+
+	// ------------------------------------------------------------------------
+	// IO
+	// ------------------------------------------------------------------------
+	private SaveableData data = null;
+
+	private final CompositeDataBuilder dataBuilder;
+
+	public final SaveableData getData() {
+		if (data == null) data = dataBuilder.create();
+		return data;
+	}
+
+	// ------------------------------------------------------------------------
+
+	//TODO move visiblity button into simulation panel
+	/**
+	 * creates a toggle button bound to the visiblity of a component. <br>
+	 * 
+	 * TODO tooltip
+	 * 
+	 * @param source
+	 *            boundProperty which should be linked to component to hide/show
+	 * @return a LinkButton
+	 */
+	public LinkButton createVisibiltyButton(String keyPrefix,
+			RWValue<Boolean> source, Component target) {
+		return createVisibiltyButton(keyPrefix,null,source,target);
+	}
+	//TODO tooltips 
+	public static LinkButton createVisibiltyButton(String title,String description,
+			RWValue<Boolean> source, Component target)  {
+		BooleanBinder.bindVisible(source, target);
+		return new VisibilityButton(source, title);
+	}
+
+//	@SuppressWarnings({"ClassTooDeepInInheritanceTree"})
+    private static final class VisibilityButton extends LinkButton {
+		protected final RWValue<Boolean> source;
+		private final String title;
+		public VisibilityButton(RWValue<Boolean> src, String title) {
+			super(true);
+			this.title=title;
+			this.source = src;
+			source.connect(new ValueLink<Boolean>() {
+				public void receive(ValueChange<Boolean> event) {
+					updateIcon();
+				}
+			});    
+			updateIcon();
+			this.refresh();
+			setFont(CELESTLook.getInstance().getTitleFont());
+			addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					source.set(!source.get());
+				}
+			});
+		}
+
+		protected final void updateIcon() {
+			setIcon(source.get() ? CELESTLook.getInstance().getIcon(
+				CELESTLook.IconType.OPEN_HANDLE) : CELESTLook.getInstance()
+				.getIcon(CELESTLook.IconType.CLOSE_HANDLE));
+		}
+
+		@Override
+		protected final void refresh() {
+			if (isEnabled()) {
+				// OPTIMIZE only set text if we need to
+				setText(title);
+			}
+		}
+	}
+}

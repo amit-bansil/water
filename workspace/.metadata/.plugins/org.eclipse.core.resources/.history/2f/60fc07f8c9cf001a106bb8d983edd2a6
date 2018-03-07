@@ -1,0 +1,221 @@
+/*
+ * CREATED ON:    Apr 16, 2006 10:22:19 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water;
+
+import ca.odell.glazedlists.BasicEventList;
+import ca.odell.glazedlists.EventList;
+import ca.odell.glazedlists.event.ListEvent;
+import ca.odell.glazedlists.event.ListEventListener;
+import cps.jarch.data.value.ROValue;
+import cps.jarch.data.value.tools.RWValueImp;
+import cps.jarch.util.misc.LangUtils;
+import cps.jarch.util.notes.Nullable;
+import cps.water.data.DataViewerModel;
+
+import java.util.ArrayList;
+
+/**
+ * <p>
+ * Holds state of entire application. Meant to be accessed by EDT only except
+ * where noted. Handles snapshot logic.
+ * </p>
+ * 
+ * @version $Id$
+ * @author Amit Bansil
+ */
+//TODO IO
+public class ModelManager extends SnapshotsModel<Model>{
+	//fields
+	private final EventList<Model> models;//possible empty
+	private final DataViewerModel dataViewer1Model,dataViewer2Model;
+	//selected from models
+	//primary is null iff models is empty
+	//secondary may be null at any time
+	//primary never can be the same as secondary unless both are null
+	private final RWValueImp<Model> primarySelection,secondarySelection;
+	//points to either the primary or the secondary selection, if secondary is null
+	//always points to primary
+	private RWValueImp<Model> focusedSelection;
+	// value of focused item, null only if models is empty, this is the model
+	// the user is editing
+	private final RWValueImp<Model> focusedItem;
+	
+	//field getters
+	public final DataViewerModel getDataViewer1Model() {
+		return dataViewer1Model;
+	}
+
+	public final DataViewerModel getDataViewer2Model() {
+		return dataViewer2Model;
+	}
+
+	public final EventList<Model> getModels() {
+		return models;
+	}
+
+	public final ROValue<Model> getPrimarySelection() {
+		return primarySelection;
+	}
+
+	public final ROValue<Model> getSecondarySelection() {
+		return secondarySelection;
+	}
+	
+	public final ROValue<Model> getFocusedSelection() {
+		return focusedItem;
+	}
+	// ------------------------------------------------------------------------
+	// setters
+	public final void setPrimaryModel(Model m) {
+		LangUtils.checkArgNotNull(m);
+		
+		checkModelInThis(m);
+		if(secondarySelection.get()==m)throw new IllegalArgumentException("can't set primary to same model as secondary");
+
+		primarySelection.set(m);
+		if(focusedSelection==secondarySelection)focusedItem.set(m);
+	}
+	public final void setSecondarySelection(@Nullable Model m) {
+		if(m!=null) {
+			checkModelInThis(m);
+			if(primarySelection.get()==m)throw new IllegalArgumentException("can't set secondary to same model as primary");
+		}
+		
+		secondarySelection.set(m);
+		if(focusedSelection==secondarySelection)focusedItem.set(m);
+	}
+	public final void selectPrimaryModel() {
+		if(primarySelection.get()==null)throw new IllegalStateException("can't select null");
+		focusedSelection=primarySelection;
+		focusedItem.set(focusedSelection.get());
+	}
+	public final void selectSecondaryModel() {
+		if(secondarySelection.get()==null)throw new IllegalStateException("can't select null");
+		focusedSelection=secondarySelection;
+		focusedItem.set(focusedSelection.get());
+	}
+
+	private void checkModelInThis(Model m) {
+		if(!models.contains(m))throw new IllegalArgumentException(m+" is not managed by this");
+	}
+	// ------------------------------------------------------------------------
+	//constructor
+	public ModelManager() {
+		models=new BasicEventList<Model>();
+		dataViewer1Model=new DataViewerModel(models);
+		dataViewer2Model=new DataViewerModel(models);
+		primarySelection=new RWValueImp<Model>();
+		secondarySelection=new RWValueImp<Model>();
+		focusedItem=new RWValueImp<Model>();
+		focusedSelection=primarySelection;
+		models.addListEventListener(new ListEventListener<Model>() {
+			public void listChanged(ListEvent<Model> listChanges) {
+				processModelsChange(listChanges);
+			}
+		});
+	}
+	
+	
+	// ------------------------------------------------------------------------
+	//selection algorithm
+	
+	//when a first model is added make it the primary selection
+	//when a model is removed if it is primary (secondary) move the primary (secondary)
+	//to the next, unless the next is secondary (primary) in which case try from start
+	//if the primary is removed and only the secondary is present point it to the secondary
+	//and kill the secondary
+	//so if there is 1 it should only be the primary and there should be no secondary
+	//iff there are no items the primary should be null
+	//the secondary may be null at any time
+	private final ArrayList<Model> oldModels=new ArrayList<Model>();
+	private void processModelsChange(ListEvent<Model> listChanges) {
+		Model newPrimary,newSecondary;
+		int l=models.size();
+		if(l==0) {
+			focusedSelection=primarySelection;
+			newPrimary=newSecondary=null;
+		}else if(l==1) {
+			focusedSelection=primarySelection;
+			newPrimary=models.get(0);
+			newSecondary=null;
+		}else {
+			newPrimary=determineNew(secondarySelection,primarySelection,listChanges);
+			newSecondary=determineNew(primarySelection,secondarySelection,listChanges);
+			
+			if(newPrimary==null) {
+				assert newSecondary!=null;//if newSecondary were null the list must be empty
+				newPrimary=newSecondary;
+				newSecondary=null;
+			}
+			if(newSecondary==null)focusedSelection=primarySelection;
+		}
+		secondarySelection.set(newSecondary);
+		primarySelection.set(newPrimary);
+		focusedItem.set(focusedSelection.get());
+		
+		//empty changes to prevent mem leaks
+		while(listChanges.hasNext())listChanges.nextBlock();
+		
+		//update old models
+		oldModels.clear();
+		oldModels.addAll(models);
+	}
+	
+	private @Nullable Model determineNew(ROValue<Model> oldV, ROValue<Model> dontRetV,
+			ListEvent<Model> changes) {
+		//check that models.size()>1
+		assert models.size() > 1;
+		Model old = oldV.get();
+		Model dontRet = dontRetV.get();
+
+		//if nothing is selected or old wasn't removed don't select anything new
+		if (old == null || models.contains(old)) return old;
+
+		//find a new selection for old which is not don't, preferring the element after it
+		//but otherwise the element before it
+		//if it has neither a before or an after which is don't just scan the list
+		//finally return null if nothing is available
+
+		//get old index
+		int oldIndex = oldModels.indexOf(old);
+		assert oldIndex != -1;
+		//clone changes so we don't use up master
+		changes = new ListEvent<Model>(changes);
+		//based on changes find index of next
+		while (changes.next()) {
+			int changeIndex = changes.getIndex();
+			int changeType = changes.getType();
+
+			if (changeType == ListEvent.INSERT && changeIndex <= oldIndex) oldIndex++;
+			else if (changeType == ListEvent.DELETE && changeIndex < oldIndex)
+				oldIndex--;
+		}
+		
+		//if next is after end of list move to previous 
+		if (oldIndex == models.size()) oldIndex--;
+		//previous can't be -1
+		assert oldIndex >= 0 && oldIndex < models.size();
+
+		int newIndex=oldIndex;
+		//if this element is not don't we're good
+		//otherwise try all the ones before it
+		while(newIndex>=0) {
+			Model newModel=models.get(newIndex);
+			if(newModel!=dontRet)return newModel;
+			newIndex--;
+		}
+		
+		newIndex=oldIndex;
+		//now try everything after it
+		while(newIndex<models.size()) {
+			Model newModel=models.get(newIndex);
+			if(newModel!=dontRet)return newModel;
+			newIndex++;
+		}
+		
+		//finally give up
+		return null;
+	}
+}

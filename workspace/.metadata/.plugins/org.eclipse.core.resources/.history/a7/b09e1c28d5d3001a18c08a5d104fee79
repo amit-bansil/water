@@ -1,0 +1,81 @@
+/*
+ * CREATED ON:    Apr 24, 2006 4:27:43 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import javax.media.opengl.GLAutoDrawable;
+import javax.media.opengl.GLEventListener;
+import javax.media.opengl.Threading;
+
+import cps.jarch.util.notes.ThreadSafe;
+import cps.water.moleculedisplay.SnapshotRenderer.RenderHook;
+import cps.water.simulation.SimModel;
+import cps.water.util.OffscreenCanvas;
+
+import java.awt.Image;
+import java.util.Stack;
+
+/**
+ * <p>TODO document SnapshotRenderer
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class SnapshotDisplay {
+	public static interface RenderHook{
+		//note that his may be called by an arbitrary thread
+		public void finishedRendering(Image image);
+	}
+	
+	private final OffscreenCanvas canvas;
+	private final Renderer renderer;
+	private final Stack<Request> requests=new Stack<Request>();
+	
+	private static final class Request{
+		final DisplayModel displayModel;
+		final SimModel simModel;
+		final RenderHook renderHook;
+		public Request(final DisplayModel displayModel, final SimModel simModel, final RenderHook renderHook) {
+			super();
+			this.displayModel = displayModel;
+			this.simModel = simModel;
+			this.renderHook = renderHook;
+		}
+	}
+	
+	public final void renderSnapshot(final DisplayModel d,final SimModel m,final RenderHook hook) {
+		final Request r=new Request(d,m,hook);
+		if(Threading.isSingleThreaded()&&!Threading.isOpenGLThread()) {
+			Threading.invokeOnOpenGLThread(new Runnable() {
+				public void run() {
+					_renderSnapshot(r);
+				}
+			});
+		}else
+			_renderSnapshot(r);
+	}
+	private void _renderSnapshot(final Request r) {
+		if(!Threading.isOpenGLThread())throw new Error("should not happen");
+		synchronized(canvas) {
+			canvas.display();
+		}
+	}
+	public final void setSize(int width,int height) {
+		synchronized(canvas) {
+			if(width<1||height<1)throw new IllegalArgumentException();
+			canvas.setSize(width, height);
+		}
+	}
+	public final int getWidth() { 
+		return canvas.getWidth();
+	}
+	public final int getHeight() { 
+		return canvas.getHeight();
+	}
+	public SnapshotRenderer(int width,int height) {
+		OffscreenCanvas canvas=new OffscreenCanvas();
+		setSize(width,height);
+	}
+	
+}

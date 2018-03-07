@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry excluding="**/.svn/**" kind="src" path="src"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/jarch-util"/>
+	<classpathentry exported="true" sourcepath="lib/glazedlists/src.zip" kind="lib" path="lib/glazedlists/glazedlists-1.5.0_java15.jar"/>
+	<classpathentry kind="output" path="bin~"/>
+</classpath>

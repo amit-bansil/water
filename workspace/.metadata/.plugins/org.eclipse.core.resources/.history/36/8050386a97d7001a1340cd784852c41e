@@ -1,0 +1,30 @@
+import java.util.MissingResourceException;
+import java.util.ResourceBundle;
+
+/*
+ * CREATED ON:    Apr 29, 2006 10:56:53 AM
+ * CREATED BY:    Amit Bansil 
+ */
+/**
+ * <p>TODO document Messages
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class Messages {
+	private static final String BUNDLE_NAME = "messages"; //$NON-NLS-1$
+
+	private static final ResourceBundle RESOURCE_BUNDLE = ResourceBundle
+		.getBundle(BUNDLE_NAME);
+
+	private Messages() {
+	}
+
+	public static String getString(String key) {
+		try {
+			return RESOURCE_BUNDLE.getString(key);
+		} catch (MissingResourceException e) {
+			return '!' + key + '!';
+		}
+	}
+}

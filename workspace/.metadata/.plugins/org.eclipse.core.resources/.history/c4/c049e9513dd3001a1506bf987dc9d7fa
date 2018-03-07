@@ -1,0 +1,125 @@
+/*
+ * CREATED ON:    Apr 16, 2006 3:46:34 PM
+ * CREATED BY:    Amit Bansil 
+ */
+package cps.water.moleculedisplay;
+
+import cps.jarch.data.event.tools.DelayedLink;
+import cps.jarch.data.event.tools.SimpleLink;
+import cps.jarch.gui.util.EDTWorker;
+import cps.jarch.util.notes.Nullable;
+import cps.water.simulation.Scene;
+import cps.water.simulation.SimModel;
+import cps.water.util.Tuple3f;
+
+import javax.media.opengl.GL;
+import javax.media.opengl.glu.GLU;
+import javax.vecmath.Color3f;
+import javax.vecmath.Tuple3f;
+
+import java.util.EventObject;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * <p>Draws a Scenegraph.
+ * </p>
+ * @version $Id$
+ * @author Amit Bansil
+ */
+public class Renderer {
+	// ------------------------------------------------------------------------
+	//drawing constants
+	private static final float hSize = 0.1f;
+	private static final float oSize = 0.16f;
+	private static final float originSize = 0.1f;
+	private static final float shrinkCoef=3f;//amount to shrink atoms
+    private static final float[] oColor=new float[] {0.9f,0.9f,0.9f};
+    private static final float[] hColor=new float[] {0.9f,0.0f,0.0f};
+    private static final float[] covBonColor=new float[] {0.8f,0.0f,0.0f};
+    private static final float[] bondColor=new float[] {0.0f,0.8f,0.8f};
+	// ------------------------------------------------------------------------
+
+	private final Camera camera=new Camera();
+	
+	// ------------------------------------------------------------------------
+	//scene properties
+	//a packed array
+	//{molecule 1: oxygen atom: x, y, z, hydrogen atom 1: x, y, z, hydrogen atom 2: x, y z, molecule 2...}
+	private float[] atomPositions=new float[0];
+	private int moleculeCount;
+	private int hBondCount;
+	//a packed array
+	//{bond 1: source position x,y,z, destination position: x,y,z, bond 2...}
+	private float[] hBondPositions=new float[0];
+	private final Tuple3f boxSize;
+	// ------------------------------------------------------------------------
+	//camera properties
+	
+	
+	private final float[] translation=new float[3];
+	private final float rotateX,rotateY,zoom;
+	private boolean shrinkAtoms;
+	
+	private final synchronized void simModelChanged() {
+		final Scene scene;
+		if(simModel==null) {
+			moleculeCount=hBondCount=0;
+			scene=null;
+		}else {
+			scene=simModel.getScene();
+			moleculeCount=scene.getMoleculeCount();
+			hBondCount=scene.getHBondCount();
+			if(atomPositions.length<moleculeCount*9)atomPositions=new float[moleculeCount*9];
+			if(hBondPositions.length<hBondCount*6)hBondPositions=new float[hBondCount*6];
+			scene.getBoundsSize(boxSize);
+			
+		}
+		postDisplay();
+	}
+	// ------------------------------------------------------------------------
+	//bindings
+	private SimModel simModel;
+	private DisplayModel displayModel;
+	
+	private final SimpleLink simModelLink=new SimpleLink() {
+		public void receive(EventObject event) {
+			simModelChanged();
+		}
+	};
+	private final DelayedLink displayModelLink=DelayedLink.createConditionalLink(
+		EDTWorker.getInstance(),5, TimeUnit.MILLISECONDS,new SimpleLink() {
+			public void receive(EventObject event) {
+				displayModelChanged()l
+			}
+	});
+	public final synchronized void setSimModel(@Nullable SimModel m) {
+		if(simModel!=null)simModel.getChangeSource().disconnect(simModelLink);
+		simModel=m;
+		if(m!=null) m.getChangeSource().connect(simModelLink);
+		simModelChanged();
+	}
+	public final synchronized void setDisplayModel(@Nullable DisplayModel m) {
+	}
+	
+	// ------------------------------------------------------------------------
+	// rendering
+	public synchronized void init(GL gl,GLU glu) {
+		
+	}
+
+	private boolean displayPending=false;
+	private final void postDisplay() {
+		if(displayPending)return;
+		//TODO display
+		displayPending=true;
+	}
+	public synchronized void render(GL gl, GLU glu) {
+		displayPending=false;
+	}
+	
+}
+final class Camera{
+	
+}
+
+
